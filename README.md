@@ -12,7 +12,7 @@ npm install
 
 ## How to run
 
-3. Run the command in the terminal:
+1. Run the command in the terminal:
 
 ```bash
 npx expo start --web

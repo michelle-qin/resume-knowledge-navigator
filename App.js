@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -13,18 +13,21 @@ export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
+  const fileInputRef = useRef(null);
 
-  const pickDocument = async () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/pdf";
-    input.onchange = (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        setResumeUri(URL.createObjectURL(file));
-      }
-    };
-    input.click();
+  const pickDocument = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click(); // Use the ref to trigger the file input click
+    } else {
+      console.error("The file input is not yet available.");
+    }
+  };
+
+  const handleFileInput = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setResumeUri(URL.createObjectURL(file));
+    }
   };
 
   const sendMessage = () => {
@@ -59,7 +62,16 @@ export default function App() {
             seamless
           />
         ) : (
-          <Button title="Import Resume" onPress={pickDocument} />
+          <>
+            <Button title="Import Resume" onPress={pickDocument} />
+            <input
+              type="file"
+              accept="application/pdf"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={handleFileInput}
+            />
+          </>
         )}
       </View>
 
