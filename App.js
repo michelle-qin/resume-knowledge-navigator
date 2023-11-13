@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { default as ReactReduxFromImport, Provider } from "react-redux";
 import {
   StyleSheet,
   View,
@@ -8,6 +9,12 @@ import {
   TouchableOpacity,
   Button,
 } from "react-native";
+import {
+  ModalityProvider,
+} from "reactgenie-lib";
+import { reactGenieStore } from "./store";
+
+import ENV from "./config";
 
 export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
@@ -42,74 +49,87 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Contents Column */}
-      <View style={[styles.column, styles.contentsColumn]}>
-        <Text style={styles.columnTitle}>Contents</Text>
-        <View style={styles.topBar}></View>
-        {/* Content for the Contents Column */}
-      </View>
+    <Provider store={reactGenieStore}>
+      <ModalityProvider
+        displayTranscript={true}
+        codexApiKey={ENV.OPENAI_API_KEY}
+        codexApiBaseUrl={ENV.OPENAI_API_BASE_URL}
+        azureSpeechRegion={ENV.AZURE_SPEECH_REGION}
+        azureSpeechKey={ENV.AZURE_SPEECH_KEY}
+        extraPrompt={
+          '// we are using voice recognition. so there may be errors. Try to think about words with similar sounds. For example "address" can actually be "add this".'
+        }
+      >
+        <View style={styles.container}>
+          {/* Contents Column */}
+          <View style={[styles.column, styles.contentsColumn]}>
+            <Text style={styles.columnTitle}>Contents</Text>
+            <View style={styles.topBar}></View>
+            {/* Content for the Contents Column */}
+          </View>
 
-      {/* View Column */}
-      <View style={[styles.column, styles.viewColumn]}>
-        <Text style={styles.columnTitle}>View</Text>
-        <View style={styles.topBar}></View>
-        {resumeUri ? (
-          <iframe
-            src={resumeUri}
-            style={styles.iframeStyle}
-            title="Resume"
-            seamless
-          />
-        ) : (
-          <>
-            <Button title="Import Resume" onPress={pickDocument} />
-            <input
-              type="file"
-              accept="application/pdf"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              onChange={handleFileInput}
-            />
-          </>
-        )}
-      </View>
+          {/* View Column */}
+          <View style={[styles.column, styles.viewColumn]}>
+            <Text style={styles.columnTitle}>View</Text>
+            <View style={styles.topBar}></View>
+            {resumeUri ? (
+              <iframe
+                src={resumeUri}
+                style={styles.iframeStyle}
+                title="Resume"
+                seamless
+              />
+            ) : (
+              <>
+                <Button title="Import Resume" onPress={pickDocument} />
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  onChange={handleFileInput}
+                />
+              </>
+            )}
+          </View>
 
-      {/* Chat Column */}
-      <View style={[styles.column, styles.chatColumn]}>
-        <Text style={styles.columnTitle}>Chat</Text>
-        <View style={styles.topBar}></View>
-        <ScrollView style={styles.messagesContainer}>
-          {messages.map((message, index) => (
-            <View
-              key={index}
-              style={[
-                styles.messageBubble,
-                message.sender === "user"
-                  ? styles.userMessage
-                  : styles.aiMessage,
-              ]}
-            >
-              <Text style={styles.messageText}>{message.text}</Text>
-              <Text style={styles.messageTime}>
-                {message.time.toLocaleTimeString()}
-              </Text>
+          {/* Chat Column */}
+          <View style={[styles.column, styles.chatColumn]}>
+            <Text style={styles.columnTitle}>Chat</Text>
+            <View style={styles.topBar}></View>
+            <ScrollView style={styles.messagesContainer}>
+              {messages.map((message, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.messageBubble,
+                    message.sender === "user"
+                      ? styles.userMessage
+                      : styles.aiMessage,
+                  ]}
+                >
+                  <Text style={styles.messageText}>{message.text}</Text>
+                  <Text style={styles.messageTime}>
+                    {message.time.toLocaleTimeString()}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Enter your message..."
+              />
+              <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+                <Text style={styles.sendButtonText}>Send</Text>
+              </TouchableOpacity>
             </View>
-          ))}
-        </ScrollView>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Enter your message..."
-          />
-          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-            <Text style={styles.sendButtonText}>Send</Text>
-          </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </View>
+      </ModalityProvider>
+    </Provider>
   );
 }
 
