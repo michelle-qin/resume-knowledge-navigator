@@ -8,12 +8,26 @@ import {
   TouchableOpacity,
   Button,
 } from "react-native";
+import ToC from "./components/ToC.js";
 
 export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const fileInputRef = useRef(null);
+
+  const data = {
+    "Summary": "Accounting professional with twenty years of experience in inventory and manufacturing accounting. Ability to fill in at a moment's notice, quickly mastering new systems, processes and workflows. Take charge attitude, ability to work independently, recommend and implement ideas and process improvements.",
+    "Skills": "Microsoft Office Excel, Outlook and Word, SAGE 100, Ramp (WMS software) and Syspro (ERP program)",
+    "Experience": [
+        "Company Name City , State Accountant 04/2011 to 05/2017",
+        "Company Name City , State Inventory Control Manager 01/2008 to 01/2010",
+        "Company Name City , State Accounting Manager 01/1995 to 01/2008",
+        "Company Name City , State Full Charge Bookkeeper 01/1993 to 01/1995"
+    ],
+    "Education and Training": "B.S : Business Administration Accounting Montclair State College Business Administration Accounting",
+    "Additional Skills": "accounting, general accounting, accruals, ADP, Ad, balance, budget, business process improvement, cash flow, closing, cost control, credit, customer service, database, debit, documentation, ERP, financial, financial statements, general ledger, human resource, insurance, Inventory, inventory levels, logistics, MAS90, Excel, Microsoft Office, Outlook, Word, negotiations, payroll, PL, processes, progress, purchasing, receiving, repairing, researching, SAGE, sales, spreadsheet, tax, year-end"
+    }
 
   const pickDocument = () => {
     if (fileInputRef.current) {
@@ -48,6 +62,7 @@ export default function App() {
         <Text style={styles.columnTitle}>Contents</Text>
         <View style={styles.topBar}></View>
         {/* Content for the Contents Column */}
+        <ToC data={data}/>
       </View>
 
       {/* View Column */}
