@@ -8,42 +8,43 @@ import {
 } from "reactgenie-lib";
 import "reflect-metadata";
 
-@GenieClass("A template for DataClass")
-export class DataTemp extends DataClass {
+@GenieClass("A Resume class")
+export class Resume extends DataClass {
   @GenieKey
   @GenieProperty()
   public id: string;
   @GenieProperty()
+  public path: string;
+  @GenieProperty()
   public content: string;
 
-
-  constructor({ id, content }: { id: string; content: string }) {
+  constructor({ id, path, content }: { id: string; path: string; content: string }) {
     super({});
     this.id = id;
-    this.content = content.toLowerCase();
+    this.path = path;
+    this.content = content;
   }
 
   @GenieProperty()
   static Version: float = 1.0;
 
   static setup() {
-
-    DataTemp.CreateObject({
-      id: "1", content: "DataClass Template",
+    Resume.CreateObject({
+      id: "1", path: "John_Smith_Resume.pdf", content: "John Smith\nEmail: johnsmith@stanford.edu LinkedIn: https://linkedin.com/in/john-smith\nExperience\nSoftware Engineer Google 2019-2023",
     });
   }
 
 
   @GenieFunction()
-  static GetDataTemp({ id = "" }: { id?: string }): DataTemp {
-    return DataTemp.GetObject({ id: id });
+  static GetResume({ id = "" }: { id?: string }): Resume {
+    return Resume.GetObject({ id: id });
   }
 }
 
-export const DataTempExamples = [
+export const ResumeExamples = [
   {
-    user_utterance: "current data id",
-    example_parsed: "DataTemp.Current().id",
+    user_utterance: "current resume id",
+    example_parsed: "Resume.Current().id",
   },
 
 ];
