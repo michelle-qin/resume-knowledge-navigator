@@ -3,6 +3,7 @@
 ## Setup guide:
 
 ### Backend:
+
 (Optional) Create a conda environment.
 
 ```bash
@@ -13,10 +14,11 @@ conda activate llm
 Install required packages
 
 ```bash
-pip install requests flask openai
+pip install requests Flask openai
 ```
 
 To start the server run
+
 ```bash
 flask --app backend run --debug
 ```
