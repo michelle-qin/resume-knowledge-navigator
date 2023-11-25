@@ -4,32 +4,36 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import colors from '../colors';
 //dummy data
 
-function conditional_render_toc_item(props) {
+function Conditional_render_toc_item(props) {
 
-    console.log ('rendered')
+    console.log('props.expanded:')
+    console.log(props.expanded)
+    console.log('props.content:')
+    console.log(typeof(props.content))
 
     return (
         
         (props.expanded && typeof(props.content) == 'string') ? (
 
         <View style={styles.child}>
-            <Text>{props.data}</Text>    
+            <Text>{props.content}</Text>    
         </View> 
     
-        ) : (props.expanded && props.content == 'array') ? (
+        ) : (props.expanded && typeof(props.content) == 'object') ? (
 
             <View style={styles.child}>
                 <FlatList
-                    data = {props.data}
-                    renderItem = {({item}) => <sub_item content={item}/>}
+                    data = {props.content}
+                    renderItem = {({item}) => <Sub_item content={item}/>}
                 />
             </View>
-        ) : null
+
+        ) : console.log('all conditions failed')
 
     );
 }
 
-const sub_item = (content) => {
+const Sub_item = (content) => {
 
     <View style={styles.sub_item}>
         <Text style={styles.content}>{content}</Text>
@@ -38,9 +42,8 @@ const sub_item = (content) => {
 }
 
 //takes props header, content 
-const toc_item = (props) => {
+const Toc_item = (props) => {
 
-    console.log('toc_item')
 
     const [expanded, setExpanded] = React.useState(false);
 
@@ -57,7 +60,7 @@ const toc_item = (props) => {
 
             <View style={styles.parentHr}/> 
 
-            {conditional_render_toc_item({expanded:expanded, content:props.content})}
+            <Conditional_render_toc_item expanded = {expanded} content = {props.content} />
 
         </View>
                 
@@ -70,13 +73,16 @@ const toc_item = (props) => {
 const ToC = (props) => {
 
     const [listDataSource, setListDataSource] = React.useState(props.data);
-    console.log(listDataSource)
 
     return(
 
         <View style={styles.container}>
             
-            listDataSource.map(({header:content}) => (<toc_item header = {header} content = {content} />))}
+            <FlatList
+                data = {Object.keys(listDataSource)}
+                renderItem = {({item}) => <Toc_item header = {item} content = {listDataSource[item]}/>}
+            />
+
 
         </View>
 
