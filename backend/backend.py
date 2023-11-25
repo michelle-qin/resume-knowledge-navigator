@@ -1,8 +1,66 @@
 from flask import Flask, jsonify, request, Response, abort
 import semantic
+import sqlite3
+from parse_text import pdf_to_text
 
 api = Flask(__name__)
 client = semantic.backend()
+
+def add_pdf_to_table(path):
+    conn = sqlite3.connect('file_table.db')
+    cursor = conn.cursor()
+
+    content = pdf_to_text(path)
+
+    # Insert a new row into the table
+    cursor.execute("INSERT INTO documents (content, path) VALUES (?, ?)", (content, path))
+    conn.commit()
+
+    # Retrieve the ID of the newly inserted row
+    inserted_id = cursor.lastrowid
+
+    cursor.close()
+    conn.close()
+    return inserted_id
+
+@api.route('/set_paper', methods=['POST'])
+def set_paper():
+    if 'pdf_file' not in request.files:
+        return jsonify({'message': 'No file included in request'}), 400
+
+    file = request.files['pdf_file']
+
+    # Check if the file is a PDF (optional, but recommended)
+    if file and file.filename.endswith('.pdf'):
+        # Process the file, for example, save it to a directory
+        file.save('pdfs/' + file.filename)
+        new_id = add_pdf_to_table('pdfs/' + file.filename)
+
+        return jsonify({'message': 'File successfully uploaded', 'id': new_id}), 200
+    else:
+        return jsonify({'message': 'Invalid file format. Needs to be a pdf'}), 400
+
+@api.route('/reset', methods=['POST'])
+def reset_db():
+    conn = sqlite3.connect('file_table.db')
+    cursor = conn.cursor()
+
+    create_statement = """
+    CREATE TABLE "documents" (
+        "id"	INTEGER,
+        "content"	TEXT,
+        "path"	TEXT,
+        PRIMARY KEY("id" AUTOINCREMENT)
+    )    
+    """
+
+    # Insert a new row into the table
+    cursor.execute("DROP TABLE documents")
+    cursor.execute(create_statement)
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'message': 'Reset database'}), 200
 
 @api.route('/query', methods=['GET'])
 def paper_search():
