@@ -2,18 +2,15 @@ import ast
 import fitz
 import pdfplumber
 from openai import AzureOpenAI
+from sql_helpers import get_text_from_id, get_path_from_id
 
 # Highlights the relevant sections in the given pdf (given by <pdf_path>) that satisfies the given query.
 # Saves the highlighted version in "highlighted_<pdf_path>".
 # Returns a python list of highlighted text sections.
 # To use, "from document_highlight import return_highlighted_pdf"
-def return_highlighted_pdf(pdf_path, query):
-    document = ""
-    with pdfplumber.open(pdf_path) as pdf:
-        document = ""
-        for page in pdf.pages:
-            text = page.extract_text()
-            document += text + "\n\n"
+def return_highlighted_pdf(doc_id, query):
+    document = get_text_from_id(doc_id)
+
     client = AzureOpenAI(
         api_key = "43e550eeba474206af4d0dff8b06a64e",  
         api_version = "2023-05-15",
@@ -51,6 +48,7 @@ def return_highlighted_pdf(pdf_path, query):
             ]
         ).choices[0].message.content[10:]
     response = ast.literal_eval(response)
+    pdf_path = get_path_from_id(doc_id)
     pdf_document = fitz.open(pdf_path)
     for query in response:
         for page in pdf_document:
