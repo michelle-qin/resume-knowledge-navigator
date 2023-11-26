@@ -2,6 +2,7 @@ import os
 import requests
 import json
 from openai import AzureOpenAI
+from sql_helpers import get_text_from_id
 
 class backend:
     azure_endpoint = "https://openaiaus.openai.azure.com/"
@@ -20,8 +21,7 @@ class backend:
         if doc_id == "mock":
             return self.metadata
         else:
-            file1 = open("../documents/"+doc_id,"r")
-            text = "".join(file1.readlines())
+            text = get_text_from_id(doc_id)
             json_text = self.query_gpt4(f"You are a semantic parser. Use the following resume to populate a Json object \n\n Json Schema: {self.schema}\n\ndocument: {text}\nJSON:")
             json_result = json.loads(json_text)
             return json_result
