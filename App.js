@@ -21,6 +21,7 @@ export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
+  const [currentDocID, setCurrentDocID] = useState(null); // TODO: Use this to fetch the resume from the backend
   const fileInputRef = useRef(null);
 
   const data = {
@@ -35,6 +36,7 @@ export default function App() {
     "Education and Training": "B.S : Business Administration Accounting Montclair State College Business Administration Accounting",
     "Additional Skills": "accounting, general accounting, accruals, ADP, Ad, balance, budget, business process improvement, cash flow, closing, cost control, credit, customer service, database, debit, documentation, ERP, financial, financial statements, general ledger, human resource, insurance, Inventory, inventory levels, logistics, MAS90, Excel, Microsoft Office, Outlook, Word, negotiations, payroll, PL, processes, progress, purchasing, receiving, repairing, researching, SAGE, sales, spreadsheet, tax, year-end"
     }
+    const [toc, setToc] = useState(data);
 
   const pickDocument = () => {
     if (fileInputRef.current) {
@@ -49,6 +51,15 @@ export default function App() {
     if (file) {
       setResumeUri(URL.createObjectURL(file));
     }
+    
+    fetch("/add_doc").then((response) => 
+    response.json().then((info) => {
+      
+      setCurrentDocID(info.id);
+
+    })
+  )
+
   };
 
   const sendMessage = () => {
@@ -80,7 +91,7 @@ export default function App() {
             <Text style={styles.columnTitle}>Contents</Text>
             <View style={styles.topBar}></View>
             {/* Content for the Contents Column */}
-            <ToC style = {styles.toc} data={data}/>
+            <ToC style = {styles.toc} data= {toc} doc_id = {currentDocID} />
           </View>
 
           {/* View Column */}
