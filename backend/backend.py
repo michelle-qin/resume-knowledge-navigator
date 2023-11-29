@@ -1,30 +1,16 @@
 from flask import Flask, jsonify, request, Response, abort
 import semantic
 import sqlite3
+import os
+from sql_helpers import add_pdf_to_table
 from parse_text import pdf_to_text
+from document_highlight import return_highlighted_pdf
 
 api = Flask(__name__)
 client = semantic.backend()
 
-def add_pdf_to_table(path):
-    conn = sqlite3.connect('file_table.db')
-    cursor = conn.cursor()
-
-    content = pdf_to_text(path)
-
-    # Insert a new row into the table
-    cursor.execute("INSERT INTO documents (content, path) VALUES (?, ?)", (content, path))
-    conn.commit()
-
-    # Retrieve the ID of the newly inserted row
-    inserted_id = cursor.lastrowid
-
-    cursor.close()
-    conn.close()
-    return inserted_id
-
-@api.route('/set_paper', methods=['POST'])
-def set_paper():
+@api.route('/add_doc', methods=['POST'])
+def add_doc():
     if 'pdf_file' not in request.files:
         return jsonify({'message': 'No file included in request'}), 400
 
@@ -32,11 +18,22 @@ def set_paper():
 
     # Check if the file is a PDF (optional, but recommended)
     if file and file.filename.endswith('.pdf'):
+        print(file.filename)
         # Process the file, for example, save it to a directory
-        file.save('pdfs/' + file.filename)
-        new_id = add_pdf_to_table('pdfs/' + file.filename)
+        root_path = os.path.abspath('..')
+        be_path = os.path.join(root_path, "backend")
+        pdf_path = os.path.join(be_path, "pdf")
+        file_path = os.path.join(pdf_path, file.filename)
+        file.save(file_path)
+        doc_id = add_pdf_to_table(file_path)
+        
+        assets_path = os.path.join(root_path, "assets")
+        target_path = os.path.join(assets_path, f"{doc_id}.pdf")
+        if os.path.isfile(target_path):
+            os.remove(target_path)
+        file.save(target_path)
 
-        return jsonify({'message': 'File successfully uploaded', 'id': new_id}), 200
+        return jsonify({'message': 'File successfully uploaded', 'id': doc_id}), 200
     else:
         return jsonify({'message': 'Invalid file format. Needs to be a pdf'}), 400
 
@@ -67,12 +64,12 @@ def paper_search():
     print(request.json)
     doc_id = request.json['doc_id']
     query = request.json['query']
-    response = jsonify(query_result)
+    response = jsonify(return_highlighted_pdf(doc_id, query))
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
-@api.route('/gettoc', methods=['GET'])
-def get_details():
+@api.route('/get_toc', methods=['GET'])
+def get_toc():
     doc_id = request.json['doc_id']
     response = jsonify(client.get_toc(doc_id))
     response.headers.add("Access-Control-Allow-Origin", "*")
@@ -91,5 +88,3 @@ def handle_preflight():
 if __name__ == '__main__':
     api.debug = True
     api.run()
-
-query_result = ["list", "of", "question", "Answers"]

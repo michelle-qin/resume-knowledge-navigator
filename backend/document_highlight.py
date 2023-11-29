@@ -1,8 +1,13 @@
 import ast
 import fitz
+import os
 import pdfplumber
 from openai import AzureOpenAI
 from sql_helpers import get_text_from_id, get_path_from_id
+from openai_helper import get_client
+
+root_path = os.path.abspath('..')
+assets_path = os.path.join(root_path, "assets")
 
 # Highlights the relevant sections in the given pdf (given by <pdf_path>) that satisfies the given query.
 # Saves the highlighted version in "highlighted_<pdf_path>".
@@ -11,11 +16,7 @@ from sql_helpers import get_text_from_id, get_path_from_id
 def return_highlighted_pdf(doc_id, query):
     document = get_text_from_id(doc_id)
 
-    client = AzureOpenAI(
-        api_key = "43e550eeba474206af4d0dff8b06a64e",  
-        api_version = "2023-05-15",
-        azure_endpoint = "https://openaiaus.openai.azure.com/"
-    )
+    client = get_client()
     search_prompt = f"""
     You are acting as an agent that will search through a document for the answer to a request. I will now give you the document.
     Document: "{document}"
@@ -55,7 +56,11 @@ def return_highlighted_pdf(doc_id, query):
             search_results = page.search_for(query)
             for rect in search_results:
                 annot = page.add_highlight_annot(rect)
-    pdf_document.save(f"highlighted_{pdf_path}")
+                
+    target_path = os.path.join(assets_path, f"{doc_id}.pdf")
+    if os.path.isfile(target_path):
+        os.remove(target_path)
+    pdf_document.save(target_path)
     pdf_document.close()
     return response
 
