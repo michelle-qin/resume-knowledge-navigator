@@ -5,6 +5,7 @@ import ast
 import json
 from parse_text import pdf_to_text
 from sql_helpers import evaluate_query, evaluate_query_blind, get_text_from_id
+from openai_helper import get_client
 
 """
 This function will search the text for the answer to a given question.
@@ -96,11 +97,7 @@ def add_hyperlink_to_pdf(input_path, output_path, text):
 
 if __name__ == "__main__":
 
-    client = AzureOpenAI(
-        api_key = "43e550eeba474206af4d0dff8b06a64e",  
-        api_version = "2023-05-15",
-        azure_endpoint = "https://openaiaus.openai.azure.com/"
-    )
+    client = get_client()
 
     drop_query = """
     DROP TABLE IF EXISTS government_candidates;
