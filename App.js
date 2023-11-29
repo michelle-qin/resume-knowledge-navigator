@@ -80,8 +80,8 @@ export default function App() {
             <Text style={styles.columnTitle}>Contents</Text>
             <View style={styles.topBar}></View>
             {/* Content for the Contents Column */}
-            <ToC data={data}/>
-      </View>
+            <ToC style = {styles.toc} data={data}/>
+          </View>
 
           {/* View Column */}
           <View style={[styles.column, styles.viewColumn]}>
@@ -244,5 +244,9 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: "#fff",
     textAlign: "center",
+  },
+  toc: {
+    flex: 1,
+    backgroundColor: "#ececec"
   },
 });
