@@ -1,6 +1,24 @@
 import json
 import sqlite3
 
+from parse_text import pdf_to_text
+
+def add_pdf_to_table(path):
+    conn = sqlite3.connect('file_table.db')
+    cursor = conn.cursor()
+
+    content = pdf_to_text(path)
+
+    # Insert a new row into the table
+    cursor.execute("INSERT INTO documents (content, path) VALUES (?, ?)", (content, path))
+    conn.commit()
+
+    # Retrieve the ID of the newly inserted row
+    inserted_id = cursor.lastrowid
+
+    cursor.close()
+    conn.close()
+    return inserted_id
 
 def get_text_from_id(id):
     conn = sqlite3.connect('file_table.db')
