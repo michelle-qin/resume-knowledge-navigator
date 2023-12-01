@@ -39,6 +39,12 @@ def add_doc():
 
 @api.route('/reset', methods=['POST'])
 def reset_db():
+
+    for filename in os.listdir("pdf"):
+        file_path = os.path.join("pdf", filename)
+        os.unlink(file_path)
+
+
     conn = sqlite3.connect('file_table.db')
     cursor = conn.cursor()
 

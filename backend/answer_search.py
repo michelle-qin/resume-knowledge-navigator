@@ -3,7 +3,6 @@ import os
 from openai import AzureOpenAI
 import ast
 import json
-from parse_text import pdf_to_text
 from sql_helpers import evaluate_query, evaluate_query_blind, get_text_from_id
 from openai_helper import get_client
 
@@ -17,14 +16,14 @@ return: dictionary with two fields
     2. Citation which is the verbatim text supporting it
 
 """
-def search_text(doc_id, question):
+def search_text(doc_id, query):
     document = get_text_from_id(doc_id)
 
     search_prompt = f"""
     You are acting as an agent that will search through a document for the answer to a request. I will now give you the document.
     Document: "{document}"
     Now, I will give you the request.
-    Request: "{question}"
+    Request: "{query}"
     Given the passage and the request, you must give the verbatim citation from the given passage which satisfies the request. If the information is not explicitly shown in the text just put "None". Make sure your answer is in this format:
     {{
         "answer": "<YOUR ANSWER>",
@@ -58,9 +57,9 @@ def search_text(doc_id, question):
         "citation": "None">
     }}
 
-    Only give the answer in the format that I told you. Do not say anything else extra other than the answer. Do not act as if you are a human. Act as if you are the raw output for a query.
+    Only give the answer in the format that I told you. Do not say anything else extra other than the answer. Do not act as if you are a human. Act as if you are the raw output for a query. Give only the first instance of the answer even if multiple parts are relevant
     """
-
+    client = get_client()
     response = client.chat.completions.create(
         model = "gpt4",
         temperature = 0,
@@ -83,76 +82,86 @@ This code will add a highlight to a pdf given a piece of text that the LLM has s
 
 param: input_path (string) the path to the pdf file we will be highlighting
 param: output_path (string) the path that we want to save the highlighted pdf to
-param: text (string) the text we want to highlight in the pdf
+param: sections (List[string]) the list of text sections we want to highlight in the pdf
 """
-def add_hyperlink_to_pdf(input_path, output_path, text):
+def add_hyperlinks_to_pdf(input_path, output_path, sections):
     pdf_document = fitz.open(input_path)
-    for page in pdf_document:
-        search_results = page.search_for(text)
-        for rect in search_results:
-            annot = page.add_highlight_annot(rect)
+    for query in sections:
+        for page in pdf_document:
+            search_results = page.search_for(query)
+            for rect in search_results:
+                annot = page.add_highlight_annot(rect)
     pdf_document.save(output_path)
     pdf_document.close()
 
 
-if __name__ == "__main__":
+def query_gpt4(prompt):
+    client = get_client()
+    response = client.chat.completions.create(
+        model="gpt4",
+        messages=[
+            {"role": "user", "content": prompt}
+            ])
+    return response.choices[0].message.content
+
+def multiple_document_table(doc_ids, query):
 
     client = get_client()
+    schema = "multiple_doc"
+    table_name = "table"
 
-    drop_query = """
-    DROP TABLE IF EXISTS government_candidates;
+    field_prompt = f"""
+    Given the query, give me the name of the column that would store the answer to it in a SQL table. Here are a few examples:
+
+    Query: Show me how this applicant has demostrates diversity.
+    Field name: diversity
+
+    Query: What foreign experience does this applicant have?
+    Field name: foreign_experience
+
+    Query: What college did they go to?
+    Field name: college
+
+    Remember only give me the field name after the "Field name:" This should be one word with no spaces. Use an underscore to separate words.
+
+    Query: {query}
+    Field name:
     """
 
-    print("Drop previous table")
-    evaluate_query("government", drop_query)
+    field = query_gpt4(field_prompt)
 
-    create_query = """
-    CREATE TABLE government_candidates (
-        name TEXT,
-        government_agency TEXT,
-        government_agency_citation TEXT,
-        university TEXT,
-        university_citation TEXT
+    delete_query = f"DROP TABLE search_results"
+    evaluate_query(schema, delete_query)
+
+    create_query = f"""
+        CREATE TABLE search_results (
+        doc_id INTEGER,
+        {field} TEXT,
+        {field}_citation TEXT
     );
     """
+    print(create_query)
+    evaluate_query(schema, create_query)
 
-    print("Clearing then creating table")
-    evaluate_query("government", create_query)
+    for doc_id in doc_ids:
+        print(f"Processing document {doc_id}")
+        # print(get_text_from_id(doc_id))
 
-    for file in sorted(os.listdir("small_data/")):
-        if file[-3:] == "pdf":
-            file_name = file.split('.')[0]
-            print(file)
-            pdf_to_text(f"small_data/{file}", f"small_data/{file_name}.txt")
-            with open(f"small_data/{file_name}.txt", "r") as resume:
-                document = resume.read()
+        response_dict = search_text(doc_id, query)
 
-            gov_request = "Which government agency has this candidate worked for?"
+        insert_query = f"""
+        INSERT INTO search_results (doc_id, {field}, {field}_citation)
+        VALUES (?, ?, ?);
+        """
 
-            gov_dict = search_text(document, gov_request)
+        data = (
+            doc_id,
+            response_dict["answer"],
+            response_dict["citation"]
+        )
 
-            university_request = "What university did this candidate attend?"
-
-            university_dict = search_text(document, university_request)
-
-            insert_query = f"""
-            INSERT INTO government_candidates (name, government_agency, government_agency_citation, university, university_citation)
-            VALUES (?, ?, ?, ?, ?);
-            """
-
-            data = (
-                file_name,
-                gov_dict["answer"],
-                gov_dict["citation"],
-                university_dict["answer"],
-                university_dict["citation"],
-            )
-
-            print(insert_query)
-            evaluate_query_blind("government", insert_query, data)
-
-            # add_hyperlink_to_pdf(pdf_input, json_dict["citation"], f"annotated_{pdf_input}")
-
+        print(insert_query)
+        evaluate_query_blind(schema, insert_query, data)
             
 
 
