@@ -17,7 +17,7 @@ class backend:
         return response.choices[0].message.content
     
     def get_keyword(self, query):
-        return query_gpt4(f"What key characteristic the user is looking for in this resume?\n\nUser query: {query}\nKeywords:")
+        return self.query_gpt4(f"What key characteristic the user is looking for in this resume?\n\nUser query: {query}\nKeywords:")
     
     def get_toc(self, doc_id):
         if doc_id == "mock":
@@ -27,6 +27,57 @@ class backend:
             json_text = self.query_gpt4(f"You are a semantic parser. Use the following resume to populate a Json object \n\n Schema: {self.schema}\n\ndocument: {text}\nJSON:")
             json_result = json.loads(json_text)
             return json_result
+
+    def add_tag_fields(self, TOC):
+        new_TOC = TOC
+        new_TOC["tags"] = []
+
+        if "workExperience" in new_TOC and isinstance(new_TOC["workExperience"], list):
+            for entry in new_TOC["workExperience"]:
+                if isinstance(entry, dict):
+                    entry["tags"] = []
+
+        if "education" in new_TOC and isinstance(new_TOC["education"], list):
+            for entry in new_TOC["education"]:
+                if isinstance(entry, dict):
+                    entry["tags"] = []
+
+        return new_TOC
+
+    def find_string_in_TOC(self, d, target, path=[]):
+        for key, value in d.items():
+            if isinstance(value, str) and target in value:
+                return path + [key]
+
+            if isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, dict):
+                        result = self.find_string_in_TOC(item, target, path + [key, i])
+                        if result:
+                            return result
+                    elif isinstance(item, str) and target in item:
+                        return path + [key, i]
+
+            if isinstance(value, dict):
+                result = self.find_string_in_TOC(value, target, path + [key])
+                if result:
+                    return result
+
+        # Return None if no match is found
+        return None
+
+    def add_tags(self, TOC, resume_text, keyword):
+        path = self.find_string_in_TOC(TOC, resume_text)
+        if path[0] == "workExperience":
+            work_experience_index = path[1]
+            if 0 <= work_experience_index < len(TOC["workExperience"]):
+                TOC["workExperience"][work_experience_index]["tags"].append(keyword)
+        elif path[0] == "education":
+            education_index = path[1]
+            if 0 <= education_index < len(TOC["education"]):
+                TOC["education"][education_index]["tags"].append(keyword)
+        else:
+            TOC["tags"].append(keyword)
 
     schema = {
         "$schema": "http://json-schema.org/draft-07/schema#",
