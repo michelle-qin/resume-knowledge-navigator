@@ -3,7 +3,6 @@ import os
 from openai import AzureOpenAI
 import ast
 import json
-from parse_text import pdf_to_text
 from sql_helpers import evaluate_query, evaluate_query_blind, get_text_from_id
 from openai_helper import get_client
 
@@ -17,14 +16,14 @@ return: dictionary with two fields
     2. Citation which is the verbatim text supporting it
 
 """
-def search_text(doc_id, question):
+def search_text(doc_id, query):
     document = get_text_from_id(doc_id)
 
     search_prompt = f"""
     You are acting as an agent that will search through a document for the answer to a request. I will now give you the document.
     Document: "{document}"
     Now, I will give you the request.
-    Request: "{question}"
+    Request: "{query}"
     Given the passage and the request, you must give the verbatim citation from the given passage which satisfies the request. If the information is not explicitly shown in the text just put "None". Make sure your answer is in this format:
     {{
         "answer": "<YOUR ANSWER>",
@@ -58,9 +57,9 @@ def search_text(doc_id, question):
         "citation": "None">
     }}
 
-    Only give the answer in the format that I told you. Do not say anything else extra other than the answer. Do not act as if you are a human. Act as if you are the raw output for a query.
+    Only give the answer in the format that I told you. Do not say anything else extra other than the answer. Do not act as if you are a human. Act as if you are the raw output for a query. Give only the first instance of the answer even if multiple parts are relevant
     """
-
+    client = get_client()
     response = client.chat.completions.create(
         model = "gpt4",
         temperature = 0,
@@ -96,26 +95,69 @@ def add_hyperlinks_to_pdf(input_path, output_path, sections):
     pdf_document.close()
 
 
-def populate_table_from_multiple_documents(schema, table, field, query, doc_ids):
+def query_gpt4(prompt):
+    client = get_client()
+    response = client.chat.completions.create(
+        model="gpt4",
+        messages=[
+            {"role": "user", "content": prompt}
+            ])
+    return response.choices[0].message.content
+
+def multiple_document_table(doc_ids, query):
 
     client = get_client()
+    schema = "multiple_doc"
+    table_name = "table"
+
+    field_prompt = f"""
+    Given the query, give me the name of the column that would store the answer to it in a SQL table. Here are a few examples:
+
+    Query: Show me how this applicant has demostrates diversity.
+    Field name: diversity
+
+    Query: What foreign experience does this applicant have?
+    Field name: foreign_experience
+
+    Query: What college did they go to?
+    Field name: college
+
+    Remember only give me the field name after the "Field name:" This should be one word with no spaces. Use an underscore to separate words.
+
+    Query: {query}
+    Field name:
+    """
+
+    field = query_gpt4(field_prompt)
+
+    delete_query = f"DROP TABLE search_results"
+    evaluate_query(schema, delete_query)
+
+    create_query = f"""
+        CREATE TABLE search_results (
+        doc_id INTEGER,
+        {field} TEXT,
+        {field}_citation TEXT
+    );
+    """
+    print(create_query)
+    evaluate_query(schema, create_query)
 
     for doc_id in doc_ids:
-        document = get_text_from_id(doc_id)
+        print(f"Processing document {doc_id}")
+        # print(get_text_from_id(doc_id))
 
-        response_dict = search_text(document, query)
+        response_dict = search_text(doc_id, query)
 
         insert_query = f"""
-        INSERT INTO {table} (name, government_agency, government_agency_citation, university, university_citation)
-        VALUES (?, ?, ?, ?, ?);
+        INSERT INTO search_results (doc_id, {field}, {field}_citation)
+        VALUES (?, ?, ?);
         """
 
         data = (
-            file_name,
-            gov_dict["answer"],
-            gov_dict["citation"],
-            university_dict["answer"],
-            university_dict["citation"],
+            doc_id,
+            response_dict["answer"],
+            response_dict["citation"]
         )
 
         print(insert_query)
