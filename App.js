@@ -10,9 +10,7 @@ import {
   Button,
 } from "react-native";
 import ToC from "./components/ToC.js";
-import {
-  ModalityProvider,
-} from "reactgenie-lib";
+import { ModalityProvider } from "reactgenie-lib";
 import { reactGenieStore } from "./store";
 
 import ENV from "./config";
@@ -25,18 +23,22 @@ export default function App() {
   const fileInputRef = useRef(null);
 
   const data = {
-    "Summary": "Accounting professional with twenty years of experience in inventory and manufacturing accounting. Ability to fill in at a moment's notice, quickly mastering new systems, processes and workflows. Take charge attitude, ability to work independently, recommend and implement ideas and process improvements.",
-    "Skills": "Microsoft Office Excel, Outlook and Word, SAGE 100, Ramp (WMS software) and Syspro (ERP program)",
-    "Experience": [
-        "Company Name City , State Accountant 04/2011 to 05/2017",
-        "Company Name City , State Inventory Control Manager 01/2008 to 01/2010",
-        "Company Name City , State Accounting Manager 01/1995 to 01/2008",
-        "Company Name City , State Full Charge Bookkeeper 01/1993 to 01/1995"
+    Summary:
+      "Accounting professional with twenty years of experience in inventory and manufacturing accounting. Ability to fill in at a moment's notice, quickly mastering new systems, processes and workflows. Take charge attitude, ability to work independently, recommend and implement ideas and process improvements.",
+    Skills:
+      "Microsoft Office Excel, Outlook and Word, SAGE 100, Ramp (WMS software) and Syspro (ERP program)",
+    Experience: [
+      "Company Name City , State Accountant 04/2011 to 05/2017",
+      "Company Name City , State Inventory Control Manager 01/2008 to 01/2010",
+      "Company Name City , State Accounting Manager 01/1995 to 01/2008",
+      "Company Name City , State Full Charge Bookkeeper 01/1993 to 01/1995",
     ],
-    "Education and Training": "B.S : Business Administration Accounting Montclair State College Business Administration Accounting",
-    "Additional Skills": "accounting, general accounting, accruals, ADP, Ad, balance, budget, business process improvement, cash flow, closing, cost control, credit, customer service, database, debit, documentation, ERP, financial, financial statements, general ledger, human resource, insurance, Inventory, inventory levels, logistics, MAS90, Excel, Microsoft Office, Outlook, Word, negotiations, payroll, PL, processes, progress, purchasing, receiving, repairing, researching, SAGE, sales, spreadsheet, tax, year-end"
-    }
-    const [toc, setToc] = useState(data);
+    "Education and Training":
+      "B.S : Business Administration Accounting Montclair State College Business Administration Accounting",
+    "Additional Skills":
+      "accounting, general accounting, accruals, ADP, Ad, balance, budget, business process improvement, cash flow, closing, cost control, credit, customer service, database, debit, documentation, ERP, financial, financial statements, general ledger, human resource, insurance, Inventory, inventory levels, logistics, MAS90, Excel, Microsoft Office, Outlook, Word, negotiations, payroll, PL, processes, progress, purchasing, receiving, repairing, researching, SAGE, sales, spreadsheet, tax, year-end",
+  };
+  const [toc, setToc] = useState(data);
 
   const pickDocument = () => {
     if (fileInputRef.current) {
@@ -51,15 +53,12 @@ export default function App() {
     if (file) {
       setResumeUri(URL.createObjectURL(file));
     }
-    
-    fetch("/add_doc").then((response) => 
-    response.json().then((info) => {
-      
-      setCurrentDocID(info.id);
 
-    })
-  )
-
+    fetch("/add_doc").then((response) =>
+      response.json().then((info) => {
+        setCurrentDocID(info.id);
+      })
+    );
   };
 
   const sendMessage = () => {
@@ -75,7 +74,7 @@ export default function App() {
 
   return (
     <Provider store={reactGenieStore}>
-      <ModalityProvider
+      {/* <ModalityProvider
         displayTranscript={true}
         codexApiKey={ENV.OPENAI_API_KEY}
         codexApiBaseUrl={ENV.OPENAI_API_BASE_URL}
@@ -84,77 +83,77 @@ export default function App() {
         extraPrompt={
           '// we are using voice recognition. so there may be errors. Try to think about words with similar sounds. For example "address" can actually be "add this".'
         }
-      >
-        <View style={styles.container}>
-          {/* Contents Column */}
-          <View style={[styles.column, styles.contentsColumn]}>
-            <Text style={styles.columnTitle}>Contents</Text>
-            <View style={styles.topBar}></View>
-            {/* Content for the Contents Column */}
-            <ToC style = {styles.toc} data= {toc} doc_id = {currentDocID} />
-          </View>
+      > */}
+      <View style={styles.container}>
+        {/* Contents Column */}
+        <View style={[styles.column, styles.contentsColumn]}>
+          <Text style={styles.columnTitle}>Contents</Text>
+          <View style={styles.topBar}></View>
+          {/* Content for the Contents Column */}
+          <ToC style={styles.toc} data={toc} doc_id={currentDocID} />
+        </View>
 
-          {/* View Column */}
-          <View style={[styles.column, styles.viewColumn]}>
-            <Text style={styles.columnTitle}>View</Text>
-            <View style={styles.topBar}></View>
-            {resumeUri ? (
-              <iframe
-                src={resumeUri}
-                style={styles.iframeStyle}
-                title="Resume"
-                seamless
+        {/* View Column */}
+        <View style={[styles.column, styles.viewColumn]}>
+          <Text style={styles.columnTitle}>View</Text>
+          <View style={styles.topBar}></View>
+          {resumeUri ? (
+            <iframe
+              src={resumeUri}
+              style={styles.iframeStyle}
+              title="Resume"
+              seamless
+            />
+          ) : (
+            <>
+              <Button title="Import Resume" onPress={pickDocument} />
+              <input
+                type="file"
+                accept="application/pdf"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileInput}
               />
-            ) : (
-              <>
-                <Button title="Import Resume" onPress={pickDocument} />
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  ref={fileInputRef}
-                  style={{ display: "none" }}
-                  onChange={handleFileInput}
-                />
-              </>
-            )}
-          </View>
+            </>
+          )}
+        </View>
 
-          {/* Chat Column */}
-          <View style={[styles.column, styles.chatColumn]}>
-            <Text style={styles.columnTitle}>Chat</Text>
-            <View style={styles.topBar}></View>
-            <ScrollView style={styles.messagesContainer}>
-              {messages.map((message, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.messageBubble,
-                    message.sender === "user"
-                      ? styles.userMessage
-                      : styles.aiMessage,
-                  ]}
-                >
-                  <Text style={styles.messageText}>{message.text}</Text>
-                  <Text style={styles.messageTime}>
-                    {message.time.toLocaleTimeString()}
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder="Enter your message..."
-              />
-              <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-                <Text style={styles.sendButtonText}>Send</Text>
-              </TouchableOpacity>
-            </View>
+        {/* Chat Column */}
+        <View style={[styles.column, styles.chatColumn]}>
+          <Text style={styles.columnTitle}>Chat</Text>
+          <View style={styles.topBar}></View>
+          <ScrollView style={styles.messagesContainer}>
+            {messages.map((message, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.messageBubble,
+                  message.sender === "user"
+                    ? styles.userMessage
+                    : styles.aiMessage,
+                ]}
+              >
+                <Text style={styles.messageText}>{message.text}</Text>
+                <Text style={styles.messageTime}>
+                  {message.time.toLocaleTimeString()}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="Enter your message..."
+            />
+            <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+              <Text style={styles.sendButtonText}>Send</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </ModalityProvider>
+      </View>
+      {/* </ModalityProvider> */}
     </Provider>
   );
 }
@@ -258,6 +257,6 @@ const styles = StyleSheet.create({
   },
   toc: {
     flex: 1,
-    backgroundColor: "#ececec"
+    backgroundColor: "#ececec",
   },
 });
