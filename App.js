@@ -89,7 +89,8 @@ export default function App() {
           console.log("DATA: ", data);
           const docId = data.id;
           console.log("DOCID: ", docId);
-          const pdfUri = `assets/${docId}.pdf`;
+          // const pdfUri = `assets/${docId}.pdf`;
+          const pdfUri = `http://127.0.0.1:5000/pdf/Rose Kuan Resume.pdf`; // TODO HARD CODING FOR NOW
           console.log("PDF URI: ", pdfUri);
           setResumeUri(pdfUri);
           console.log("RESUME URI: ", resumeUri);
@@ -151,7 +152,7 @@ export default function App() {
           <View style={styles.topBar}></View>
           {resumeUri ? (
             <iframe
-              src={"/backend/pdf/sample.pdf"} // {resumeUri}
+              src={resumeUri}
               style={styles.iframeStyle}
               title="Resume"
               seamless

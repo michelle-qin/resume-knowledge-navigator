@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, Response, abort
+from flask import Flask, jsonify, request, Response, abort, send_from_directory
 import semantic
 import sqlite3
 import os
@@ -112,6 +112,14 @@ def handle_preflight():
         res.headers["Access-Control-Allow-Methods"] = "*"
         res.headers["Access-Control-Allow-Headers"] = "*"
         return res
+
+
+@api.route("/pdf/<filename>")
+def serve_pdf(filename):
+    return send_from_directory(
+        "/Users/michelleqin/Documents/resumes-knowledge-navigator/backend/pdf",
+        filename,
+    )
 
 
 if __name__ == "__main__":
