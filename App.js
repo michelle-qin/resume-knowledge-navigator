@@ -11,9 +11,9 @@ import {
 } from "react-native";
 import ToC from "./components/ToC.js";
 import { ModalityProvider } from "reactgenie-lib";
-import { reactGenieStore } from "./store";
+import { reactGenieStore } from "./store.js";
 
-import ENV from "./config";
+import ENV from "./config.js";
 
 export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
@@ -48,17 +48,59 @@ export default function App() {
     }
   };
 
-  const handleFileInput = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setResumeUri(URL.createObjectURL(file));
-    }
+  // const handleFileInput = (event) => {
+  //   const file = event.target.files[0];
+  //   if (file) {
+  //     setResumeUri(URL.createObjectURL(file));
+  //   }
 
-    fetch("/add_doc").then((response) =>
-      response.json().then((info) => {
-        setCurrentDocID(info.id);
-      })
-    );
+  //   // 1. CALL ADD DOC
+  //   fetch("/add_doc").then((response) =>
+  //     response.json().then((info) => {
+  //       setCurrentDocID(info.id);
+  //     })
+  //   );
+
+  //   // 2. DISPLAY ASSETS/PDF (using doc id)
+  // };
+
+  const handleFileInput = async (event) => {
+    const file = event.target.files[0];
+    console.log("FILE: ", file);
+    if (file) {
+      // Prepare the file to be sent in a FormData object
+      const formData = new FormData();
+      formData.append("pdf_file", file);
+
+      console.log(formData.get("pdf_file")); // This should log the file object if it's been appended
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+        console.log(value instanceof File);
+      }
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/add_doc", {
+          method: "POST",
+          body: formData,
+        });
+        console.log("RESPONSE: ", response);
+        if (response.status == 200) {
+          const data = await response.json();
+          console.log("DATA: ", data);
+          const docId = data.id;
+          console.log("DOCID: ", docId);
+          const pdfUri = `assets/${docId}.pdf`;
+          console.log("PDF URI: ", pdfUri);
+          setResumeUri(pdfUri);
+          console.log("RESUME URI: ", resumeUri);
+        } else {
+          const errorData = await response.json();
+          console.error("File upload error:", errorData.message);
+        }
+      } catch (error) {
+        console.error("Network or other error", error);
+      }
+    }
   };
 
   const sendMessage = () => {
@@ -95,26 +137,27 @@ export default function App() {
 
         {/* View Column */}
         <View style={[styles.column, styles.viewColumn]}>
-          <Text style={styles.columnTitle}>View</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.columnTitle}>View</Text>
+            <Button title="Import Resume" onPress={pickDocument} />
+            <input
+              type="file"
+              accept="application/pdf"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={handleFileInput}
+            />
+          </View>
           <View style={styles.topBar}></View>
           {resumeUri ? (
             <iframe
-              src={resumeUri}
+              src={"/backend/pdf/sample.pdf"} // {resumeUri}
               style={styles.iframeStyle}
               title="Resume"
               seamless
             />
           ) : (
-            <>
-              <Button title="Import Resume" onPress={pickDocument} />
-              <input
-                type="file"
-                accept="application/pdf"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                onChange={handleFileInput}
-              />
-            </>
+            <></>
           )}
         </View>
 
@@ -189,6 +232,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingTop: 0,
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   iframeStyle: {
     width: "100%",
