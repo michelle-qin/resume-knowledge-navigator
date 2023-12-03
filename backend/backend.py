@@ -85,10 +85,10 @@ def reset_db():
 @api.route("/query", methods=["GET"])
 def paper_search():
     print(request.json)
-    doc_id = request.json['doc_id']
-    query = request.json['query']
+    doc_id = request.json["doc_id"]
+    query = request.json["query"]
     citations = return_highlighted_pdf(doc_id, query)
-    response = jsonify({"message":"Query was successful", "citations": citations})
+    response = jsonify({"message": "Query was successful", "citations": citations})
     doc_id = request.json["doc_id"]
     query = request.json["query"]
     response = jsonify(return_highlighted_pdf(doc_id, query))
@@ -118,7 +118,7 @@ def handle_preflight():
 @api.route("/pdf/<filename>")
 def serve_pdf(filename):
     return send_from_directory(
-        "/Users/michelleqin/Documents/resumes-knowledge-navigator/backend/pdf",
+        "/Users/michelleqin/Documents/resumes-knowledge-navigator/assets",
         filename,
     )
 

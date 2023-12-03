@@ -89,8 +89,7 @@ export default function App() {
           console.log("DATA: ", data);
           const docId = data.id;
           console.log("DOCID: ", docId);
-          // const pdfUri = `assets/${docId}.pdf`;
-          const pdfUri = `http://127.0.0.1:5000/pdf/Rose Kuan Resume.pdf`; // TODO HARD CODING FOR NOW
+          const pdfUri = `http://127.0.0.1:5000/pdf/${docId}.pdf`;
           console.log("PDF URI: ", pdfUri);
           setResumeUri(pdfUri);
           console.log("RESUME URI: ", resumeUri);
