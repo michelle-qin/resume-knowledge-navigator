@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request, Response, abort
 import semantic
 import sqlite3
 import os
+import shutil
 from sql_helpers import add_pdf_to_table
 from parse_text import pdf_to_text
 from document_highlight import return_highlighted_pdf
@@ -24,6 +25,7 @@ def add_doc():
         be_path = os.path.join(root_path, "backend")
         pdf_path = os.path.join(be_path, "pdf")
         file_path = os.path.join(pdf_path, file.filename)
+
         file.save(file_path)
         doc_id = add_pdf_to_table(file_path)
         
@@ -31,7 +33,7 @@ def add_doc():
         target_path = os.path.join(assets_path, f"{doc_id}.pdf")
         if os.path.isfile(target_path):
             os.remove(target_path)
-        file.save(target_path)
+        shutil.copy(file_path, target_path)
 
         return jsonify({'message': 'File successfully uploaded', 'id': doc_id}), 200
     else:
@@ -70,9 +72,10 @@ def paper_search():
     print(request.json)
     doc_id = request.json['doc_id']
     query = request.json['query']
-    response = jsonify(return_highlighted_pdf(doc_id, query))
+    citations = return_highlighted_pdf(doc_id, query)
+    response = jsonify({"message":"Query was successful", "citations": citations})
     response.headers.add("Access-Control-Allow-Origin", "*")
-    return response
+    return response, 200
 
 @api.route('/get_toc', methods=['GET'])
 def get_toc():
