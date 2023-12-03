@@ -82,7 +82,7 @@ def reset_db():
     return jsonify({"message": "Reset database"}), 200
 
 
-@api.route("/query", methods=["GET"])
+@api.route("/query", methods=["POST"])
 def paper_search():
     print(request.json)
     doc_id = request.json["doc_id"]

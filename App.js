@@ -19,7 +19,9 @@ export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
-  const [currentDocID, setCurrentDocID] = useState(null); // TODO: Use this to fetch the resume from the backend
+  const [currentDocID, setCurrentDocID] = useState(null);
+  const [iframeKey, setIframeKey] = useState(0);
+
   const fileInputRef = useRef(null);
 
   const data = {
@@ -48,22 +50,6 @@ export default function App() {
     }
   };
 
-  // const handleFileInput = (event) => {
-  //   const file = event.target.files[0];
-  //   if (file) {
-  //     setResumeUri(URL.createObjectURL(file));
-  //   }
-
-  //   // 1. CALL ADD DOC
-  //   fetch("/add_doc").then((response) =>
-  //     response.json().then((info) => {
-  //       setCurrentDocID(info.id);
-  //     })
-  //   );
-
-  //   // 2. DISPLAY ASSETS/PDF (using doc id)
-  // };
-
   const handleFileInput = async (event) => {
     const file = event.target.files[0];
     console.log("FILE: ", file);
@@ -91,6 +77,7 @@ export default function App() {
           console.log("DOCID: ", docId);
           const pdfUri = `http://127.0.0.1:5000/pdf/${docId}.pdf`;
           console.log("PDF URI: ", pdfUri);
+          setCurrentDocID(docId);
           setResumeUri(pdfUri);
           console.log("RESUME URI: ", resumeUri);
         } else {
@@ -103,13 +90,44 @@ export default function App() {
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (inputText.trim()) {
       const newMessages = [
         ...messages,
         { text: inputText, time: new Date(), sender: "user" },
       ];
       setMessages(newMessages);
+      console.log("CURRENT ID: ", currentDocID);
+      console.log("QUERY: ", inputText);
+      // New code to make the API call
+      try {
+        const response = await fetch("http://127.0.0.1:5000/query", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            doc_id: currentDocID,
+            query: inputText,
+          }),
+        });
+
+        console.log("RESPONSE: ", response);
+        if (response.status == 200) {
+          const responseData = await response.json();
+          console.log("API Response:", responseData);
+
+          setIframeKey((prevKey) => prevKey + 1);
+          console.log("SET IFRAME KEY: ", iframeKey);
+
+          // You can also update the UI with the response data if needed
+        } else {
+          console.error("API Error:", await response.text());
+        }
+      } catch (error) {
+        console.error("Network or other error:", error);
+      }
+
       setInputText("");
     }
   };
@@ -151,6 +169,7 @@ export default function App() {
           <View style={styles.topBar}></View>
           {resumeUri ? (
             <iframe
+              key={iframeKey}
               src={resumeUri}
               style={styles.iframeStyle}
               title="Resume"
