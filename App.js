@@ -167,7 +167,12 @@ export default function App() {
         <View style={[styles.column, styles.viewColumn]}>
           <View style={styles.titleContainer}>
             <Text style={styles.columnTitle}>View</Text>
-            <Button title="Import Resume" onPress={pickDocument} />
+            <TouchableOpacity
+              onPress={pickDocument}
+              style={styles.importButton}
+            >
+              <Text style={styles.importButtonText}>Import Resume</Text>
+            </TouchableOpacity>
             <input
               type="file"
               accept="application/pdf"
@@ -263,8 +268,10 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "space-between",
+    width: "100%",
+    position: "relative",
   },
   iframeStyle: {
     width: "100%",
@@ -335,5 +342,21 @@ const styles = StyleSheet.create({
   toc: {
     flex: 1,
     backgroundColor: "#ececec",
+  },
+  importButton: {
+    position: "absolute",
+    right: 15,
+    backgroundColor: "#007bff",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 10,
+  },
+  importButtonText: {
+    color: "#ffffff",
+    fontWeight: "500",
+    fontSize: 14,
   },
 });
