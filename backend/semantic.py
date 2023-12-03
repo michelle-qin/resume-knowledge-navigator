@@ -3,6 +3,7 @@ import requests
 import json
 from openai_helper import get_client
 from sql_helpers import get_text_from_id
+from document_highlight import return_highlighted_pdf
 
 class backend:
     def __init__(self):
@@ -78,6 +79,17 @@ class backend:
                 TOC["education"][education_index]["tags"].append(keyword)
         else:
             TOC["tags"].append(keyword)
+
+
+    def query(self, doc_id, prompt):
+        keyword = self.get_keyword(prompt)
+        TOC = self.get_toc(doc_id)
+        TOC_with_tag_fields = self.add_tag_fields(TOC)
+        citations = return_highlighted_pdf(doc_id, prompt)
+        for citation in citations:
+            self.add_tags(TOC_with_tag_fields, citation, keyword)
+        return citations, TOC_with_tag_fields
+
 
     schema = {
         "$schema": "http://json-schema.org/draft-07/schema#",

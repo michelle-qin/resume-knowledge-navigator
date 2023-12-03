@@ -103,6 +103,15 @@ def get_toc():
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
+@api.route("/full_query", methods=["GET"])
+def full_query():
+    doc_id = request.json["doc_id"]
+    query = request.json["query"]
+    citations, TOC = client.query(doc_id, query)
+    response = jsonify({"message": "Query was successful", "citations": citations, "TOC": TOC})
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
+
 
 @api.before_request
 def handle_preflight():
