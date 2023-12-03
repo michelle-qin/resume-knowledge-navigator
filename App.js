@@ -82,17 +82,10 @@ export default function App() {
       setMessages((prevMessages) => [
         ...prevMessages,
         { text: inputText, time: new Date(), sender: "user" },
+        { text: "Thinking...", time: new Date(), sender: "ai" },
       ]);
 
       setInputText("");
-
-      // Set a timeout to add the "Thinking..." message after 1 second
-      setTimeout(() => {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { text: "Thinking...", time: new Date(), sender: "ai" },
-        ]);
-      }, 1000);
 
       try {
         const response = await fetch("http://127.0.0.1:5000/query", {
@@ -114,27 +107,18 @@ export default function App() {
           aiMessageText = "I'm sorry, I can't find that info.";
         }
 
-        // after the response is received, first clear the "Thinking..." message
-        setMessages((prevMessages) =>
-          prevMessages.filter((message) => message.text !== "Thinking...")
-        );
-        // then add the AI's actual response to the chat
+        // Replace "Thinking..." with the actual response
         setMessages((prevMessages) => [
-          ...prevMessages,
+          ...prevMessages.filter((message) => message.text !== "Thinking..."),
           { text: aiMessageText, time: new Date(), sender: "ai" },
         ]);
       } catch (error) {
         console.error("Network or other error:", error);
 
-        // after catching an error, first clear the "Thinking..." message
-        setMessages((prevMessages) =>
-          prevMessages.filter((message) => message.text !== "Thinking...")
-        );
-        // then add a network error message from 'ai' to the chat
         setMessages((prevMessages) => [
-          ...prevMessages,
+          ...prevMessages.filter((message) => message.text !== "Thinking..."),
           {
-            text: "There was a network error, please try again later.",
+            text: "There was an error, please try again.",
             time: new Date(),
             sender: "ai",
           },
@@ -222,6 +206,7 @@ export default function App() {
               value={inputText}
               onChangeText={setInputText}
               placeholder="Enter your message..."
+              onSubmitEditing={sendMessage}
             />
             <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
               <Text style={styles.sendButtonText}>Send</Text>
