@@ -10,12 +10,10 @@ import {
   Button,
 } from "react-native";
 import ToC from "./components/ToC.js";
-import {
-  ModalityProvider,
-} from "reactgenie-lib";
-import { reactGenieStore } from "./store";
+import { ModalityProvider } from "reactgenie-lib";
+import { reactGenieStore } from "./store.js";
 
-import ENV from "./config";
+import ENV from "./config.js";
 
 export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
@@ -25,18 +23,22 @@ export default function App() {
   const fileInputRef = useRef(null);
 
   const data = {
-    "Summary": "Accounting professional with twenty years of experience in inventory and manufacturing accounting. Ability to fill in at a moment's notice, quickly mastering new systems, processes and workflows. Take charge attitude, ability to work independently, recommend and implement ideas and process improvements.",
-    "Skills": "Microsoft Office Excel, Outlook and Word, SAGE 100, Ramp (WMS software) and Syspro (ERP program)",
-    "Experience": [
-        "Company Name City , State Accountant 04/2011 to 05/2017",
-        "Company Name City , State Inventory Control Manager 01/2008 to 01/2010",
-        "Company Name City , State Accounting Manager 01/1995 to 01/2008",
-        "Company Name City , State Full Charge Bookkeeper 01/1993 to 01/1995"
+    Summary:
+      "Accounting professional with twenty years of experience in inventory and manufacturing accounting. Ability to fill in at a moment's notice, quickly mastering new systems, processes and workflows. Take charge attitude, ability to work independently, recommend and implement ideas and process improvements.",
+    Skills:
+      "Microsoft Office Excel, Outlook and Word, SAGE 100, Ramp (WMS software) and Syspro (ERP program)",
+    Experience: [
+      "Company Name City , State Accountant 04/2011 to 05/2017",
+      "Company Name City , State Inventory Control Manager 01/2008 to 01/2010",
+      "Company Name City , State Accounting Manager 01/1995 to 01/2008",
+      "Company Name City , State Full Charge Bookkeeper 01/1993 to 01/1995",
     ],
-    "Education and Training": "B.S : Business Administration Accounting Montclair State College Business Administration Accounting",
-    "Additional Skills": "accounting, general accounting, accruals, ADP, Ad, balance, budget, business process improvement, cash flow, closing, cost control, credit, customer service, database, debit, documentation, ERP, financial, financial statements, general ledger, human resource, insurance, Inventory, inventory levels, logistics, MAS90, Excel, Microsoft Office, Outlook, Word, negotiations, payroll, PL, processes, progress, purchasing, receiving, repairing, researching, SAGE, sales, spreadsheet, tax, year-end"
-    }
-    const [toc, setToc] = useState(data);
+    "Education and Training":
+      "B.S : Business Administration Accounting Montclair State College Business Administration Accounting",
+    "Additional Skills":
+      "accounting, general accounting, accruals, ADP, Ad, balance, budget, business process improvement, cash flow, closing, cost control, credit, customer service, database, debit, documentation, ERP, financial, financial statements, general ledger, human resource, insurance, Inventory, inventory levels, logistics, MAS90, Excel, Microsoft Office, Outlook, Word, negotiations, payroll, PL, processes, progress, purchasing, receiving, repairing, researching, SAGE, sales, spreadsheet, tax, year-end",
+  };
+  const [toc, setToc] = useState(data);
 
   const pickDocument = () => {
     if (fileInputRef.current) {
@@ -46,20 +48,60 @@ export default function App() {
     }
   };
 
-  const handleFileInput = (event) => {
+  // const handleFileInput = (event) => {
+  //   const file = event.target.files[0];
+  //   if (file) {
+  //     setResumeUri(URL.createObjectURL(file));
+  //   }
+
+  //   // 1. CALL ADD DOC
+  //   fetch("/add_doc").then((response) =>
+  //     response.json().then((info) => {
+  //       setCurrentDocID(info.id);
+  //     })
+  //   );
+
+  //   // 2. DISPLAY ASSETS/PDF (using doc id)
+  // };
+
+  const handleFileInput = async (event) => {
     const file = event.target.files[0];
+    console.log("FILE: ", file);
     if (file) {
-      setResumeUri(URL.createObjectURL(file));
+      // Prepare the file to be sent in a FormData object
+      const formData = new FormData();
+      formData.append("pdf_file", file);
+
+      console.log(formData.get("pdf_file")); // This should log the file object if it's been appended
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+        console.log(value instanceof File);
+      }
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/add_doc", {
+          method: "POST",
+          body: formData,
+        });
+        console.log("RESPONSE: ", response);
+        if (response.status == 200) {
+          const data = await response.json();
+          console.log("DATA: ", data);
+          const docId = data.id;
+          console.log("DOCID: ", docId);
+          // const pdfUri = `assets/${docId}.pdf`;
+          const pdfUri = `http://127.0.0.1:5000/pdf/Rose Kuan Resume.pdf`; // TODO HARD CODING FOR NOW
+          console.log("PDF URI: ", pdfUri);
+          setResumeUri(pdfUri);
+          console.log("RESUME URI: ", resumeUri);
+        } else {
+          const errorData = await response.json();
+          console.error("File upload error:", errorData.message);
+        }
+      } catch (error) {
+        console.error("Network or other error", error);
+      }
     }
-    
-    fetch("/add_doc").then((response) => 
-    response.json().then((info) => {
-      
-      setCurrentDocID(info.id);
-
-    })
-  )
-
   };
 
   const sendMessage = () => {
@@ -75,7 +117,7 @@ export default function App() {
 
   return (
     <Provider store={reactGenieStore}>
-      <ModalityProvider
+      {/* <ModalityProvider
         displayTranscript={true}
         codexApiKey={ENV.OPENAI_API_KEY}
         codexApiBaseUrl={ENV.OPENAI_API_BASE_URL}
@@ -84,77 +126,78 @@ export default function App() {
         extraPrompt={
           '// we are using voice recognition. so there may be errors. Try to think about words with similar sounds. For example "address" can actually be "add this".'
         }
-      >
-        <View style={styles.container}>
-          {/* Contents Column */}
-          <View style={[styles.column, styles.contentsColumn]}>
-            <Text style={styles.columnTitle}>Contents</Text>
-            <View style={styles.topBar}></View>
-            {/* Content for the Contents Column */}
-            <ToC style = {styles.toc} data= {toc} doc_id = {currentDocID} />
-          </View>
+      > */}
+      <View style={styles.container}>
+        {/* Contents Column */}
+        <View style={[styles.column, styles.contentsColumn]}>
+          <Text style={styles.columnTitle}>Contents</Text>
+          <View style={styles.topBar}></View>
+          {/* Content for the Contents Column */}
+          <ToC style={styles.toc} data={toc} doc_id={currentDocID} />
+        </View>
 
-          {/* View Column */}
-          <View style={[styles.column, styles.viewColumn]}>
+        {/* View Column */}
+        <View style={[styles.column, styles.viewColumn]}>
+          <View style={styles.titleContainer}>
             <Text style={styles.columnTitle}>View</Text>
-            <View style={styles.topBar}></View>
-            {resumeUri ? (
-              <iframe
-                src={resumeUri}
-                style={styles.iframeStyle}
-                title="Resume"
-                seamless
-              />
-            ) : (
-              <>
-                <Button title="Import Resume" onPress={pickDocument} />
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  ref={fileInputRef}
-                  style={{ display: "none" }}
-                  onChange={handleFileInput}
-                />
-              </>
-            )}
+            <Button title="Import Resume" onPress={pickDocument} />
+            <input
+              type="file"
+              accept="application/pdf"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={handleFileInput}
+            />
           </View>
+          <View style={styles.topBar}></View>
+          {resumeUri ? (
+            <iframe
+              src={resumeUri}
+              style={styles.iframeStyle}
+              title="Resume"
+              seamless
+            />
+          ) : (
+            <></>
+          )}
+        </View>
 
-          {/* Chat Column */}
-          <View style={[styles.column, styles.chatColumn]}>
-            <Text style={styles.columnTitle}>Chat</Text>
-            <View style={styles.topBar}></View>
-            <ScrollView style={styles.messagesContainer}>
-              {messages.map((message, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.messageBubble,
-                    message.sender === "user"
-                      ? styles.userMessage
-                      : styles.aiMessage,
-                  ]}
-                >
-                  <Text style={styles.messageText}>{message.text}</Text>
-                  <Text style={styles.messageTime}>
-                    {message.time.toLocaleTimeString()}
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder="Enter your message..."
-              />
-              <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-                <Text style={styles.sendButtonText}>Send</Text>
-              </TouchableOpacity>
-            </View>
+        {/* Chat Column */}
+        <View style={[styles.column, styles.chatColumn]}>
+          <Text style={styles.columnTitle}>Chat</Text>
+          <View style={styles.topBar}></View>
+          <ScrollView style={styles.messagesContainer}>
+            {messages.map((message, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.messageBubble,
+                  message.sender === "user"
+                    ? styles.userMessage
+                    : styles.aiMessage,
+                ]}
+              >
+                <Text style={styles.messageText}>{message.text}</Text>
+                <Text style={styles.messageTime}>
+                  {message.time.toLocaleTimeString()}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="Enter your message..."
+            />
+            <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+              <Text style={styles.sendButtonText}>Send</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </ModalityProvider>
+      </View>
+      {/* </ModalityProvider> */}
     </Provider>
   );
 }
@@ -190,6 +233,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingTop: 0,
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   iframeStyle: {
     width: "100%",
@@ -258,6 +306,6 @@ const styles = StyleSheet.create({
   },
   toc: {
     flex: 1,
-    backgroundColor: "#ececec"
+    backgroundColor: "#ececec",
   },
 });
