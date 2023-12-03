@@ -52,34 +52,21 @@ export default function App() {
 
   const handleFileInput = async (event) => {
     const file = event.target.files[0];
-    console.log("FILE: ", file);
     if (file) {
-      // Prepare the file to be sent in a FormData object
       const formData = new FormData();
       formData.append("pdf_file", file);
-
-      console.log(formData.get("pdf_file")); // This should log the file object if it's been appended
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
-        console.log(value instanceof File);
-      }
 
       try {
         const response = await fetch("http://127.0.0.1:5000/add_doc", {
           method: "POST",
           body: formData,
         });
-        console.log("RESPONSE: ", response);
         if (response.status == 200) {
           const data = await response.json();
-          console.log("DATA: ", data);
           const docId = data.id;
-          console.log("DOCID: ", docId);
           const pdfUri = `http://127.0.0.1:5000/pdf/${docId}.pdf`;
-          console.log("PDF URI: ", pdfUri);
           setCurrentDocID(docId);
           setResumeUri(pdfUri);
-          console.log("RESUME URI: ", resumeUri);
         } else {
           const errorData = await response.json();
           console.error("File upload error:", errorData.message);
@@ -92,14 +79,21 @@ export default function App() {
 
   const sendMessage = async () => {
     if (inputText.trim()) {
-      const newMessages = [
-        ...messages,
+      setMessages((prevMessages) => [
+        ...prevMessages,
         { text: inputText, time: new Date(), sender: "user" },
-      ];
-      setMessages(newMessages);
-      console.log("CURRENT ID: ", currentDocID);
-      console.log("QUERY: ", inputText);
-      // New code to make the API call
+      ]);
+
+      setInputText("");
+
+      // Set a timeout to add the "Thinking..." message after 1 second
+      setTimeout(() => {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { text: "Thinking...", time: new Date(), sender: "ai" },
+        ]);
+      }, 1000);
+
       try {
         const response = await fetch("http://127.0.0.1:5000/query", {
           method: "POST",
@@ -112,23 +106,40 @@ export default function App() {
           }),
         });
 
-        console.log("RESPONSE: ", response);
+        let aiMessageText;
         if (response.status == 200) {
-          const responseData = await response.json();
-          console.log("API Response:", responseData);
-
+          aiMessageText = "See highlights.";
           setIframeKey((prevKey) => prevKey + 1);
-          console.log("SET IFRAME KEY: ", iframeKey);
-
-          // You can also update the UI with the response data if needed
         } else {
-          console.error("API Error:", await response.text());
+          aiMessageText = "I'm sorry, I can't find that info.";
         }
+
+        // after the response is received, first clear the "Thinking..." message
+        setMessages((prevMessages) =>
+          prevMessages.filter((message) => message.text !== "Thinking...")
+        );
+        // then add the AI's actual response to the chat
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { text: aiMessageText, time: new Date(), sender: "ai" },
+        ]);
       } catch (error) {
         console.error("Network or other error:", error);
-      }
 
-      setInputText("");
+        // after catching an error, first clear the "Thinking..." message
+        setMessages((prevMessages) =>
+          prevMessages.filter((message) => message.text !== "Thinking...")
+        );
+        // then add a network error message from 'ai' to the chat
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            text: "There was a network error, please try again later.",
+            time: new Date(),
+            sender: "ai",
+          },
+        ]);
+      }
     }
   };
 
@@ -152,7 +163,6 @@ export default function App() {
           {/* Content for the Contents Column */}
           <ToC style={styles.toc} data={toc} doc_id={currentDocID} />
         </View>
-
         {/* View Column */}
         <View style={[styles.column, styles.viewColumn]}>
           <View style={styles.titleContainer}>
@@ -179,7 +189,6 @@ export default function App() {
             <></>
           )}
         </View>
-
         {/* Chat Column */}
         <View style={[styles.column, styles.chatColumn]}>
           <Text style={styles.columnTitle}>Chat</Text>
@@ -259,15 +268,16 @@ const styles = StyleSheet.create({
   },
   iframeStyle: {
     width: "100%",
-    height: "calc(100% - 4px)", // Adjust height to take into account the topBar height
+    height: "calc(100% - 4px)",
     borderWidth: 0,
   },
   chatColumn: {
     backgroundColor: "#ececec",
+    flex: 1,
+    justifyContent: "flex-end",
   },
   messagesContainer: {
     flex: 1,
-    padding: 10,
     width: "100%",
   },
   messageBubble: {
@@ -291,12 +301,12 @@ const styles = StyleSheet.create({
   },
   aiMessage: {
     alignSelf: "flex-start",
-    backgroundColor: "#f0f0f0", // A light grey background for AI messages
+    backgroundColor: "#f0f0f0",
   },
   inputContainer: {
     flexDirection: "row",
     padding: 0,
-    width: "100%", // Make sure the container takes the full width of its parent
+    width: "100%",
   },
   input: {
     flex: 1,
