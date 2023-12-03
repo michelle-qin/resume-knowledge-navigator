@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request, Response, abort, send_from_directory
 import semantic
 import sqlite3
 import os
+import shutil
 from sql_helpers import add_pdf_to_table
 from parse_text import pdf_to_text
 from document_highlight import return_highlighted_pdf
@@ -14,15 +15,11 @@ CORS(api)
 
 @api.route("/add_doc", methods=["POST"])
 def add_doc():
-    print("WE ARE HERE")
     try:
-        print("TRYING")
-        print("REQUEST FILES: ", request.files)
         if "pdf_file" not in request.files:
             return jsonify({"message": "No file included in request"}), 400
-        print("DEBUG 1")
+
         file = request.files["pdf_file"]
-        print("FILE: ", file)
 
         # Check if the file is a PDF (optional, but recommended)
         if file and file.filename.endswith(".pdf"):
@@ -47,7 +44,7 @@ def add_doc():
 
             if os.path.isfile(target_path):
                 os.remove(target_path)
-            file.save(target_path)
+            shutil.copy(file_path, target_path)
 
             return jsonify({"message": "File successfully uploaded", "id": doc_id}), 200
         else:
@@ -88,11 +85,15 @@ def reset_db():
 @api.route("/query", methods=["GET"])
 def paper_search():
     print(request.json)
+    doc_id = request.json['doc_id']
+    query = request.json['query']
+    citations = return_highlighted_pdf(doc_id, query)
+    response = jsonify({"message":"Query was successful", "citations": citations})
     doc_id = request.json["doc_id"]
     query = request.json["query"]
     response = jsonify(return_highlighted_pdf(doc_id, query))
     response.headers.add("Access-Control-Allow-Origin", "*")
-    return response
+    return response, 200
 
 
 @api.route("/get_toc", methods=["GET"])
