@@ -84,18 +84,13 @@ def reset_db():
 
 @api.route("/query", methods=["POST"])
 def paper_search():
-    print(request.json)
     doc_id = request.json["doc_id"]
     query = request.json["query"]
-    citations = return_highlighted_pdf(doc_id, query)
-    response = jsonify({"message": "Query was successful", "citations": citations})
-    doc_id = request.json["doc_id"]
-    query = request.json["query"]
-    response = jsonify(return_highlighted_pdf(doc_id, query))
+    citations, TOC = client.query(doc_id, query)
+    response = jsonify({"message": "Query was successful", "citations": citations, "TOC": TOC})
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response, 200
-
-
+    
 @api.route("/get_toc", methods=["GET"])
 def get_toc():
     doc_id = request.json["doc_id"]
@@ -103,14 +98,7 @@ def get_toc():
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
-@api.route("/full_query", methods=["GET"])
-def full_query():
-    doc_id = request.json["doc_id"]
-    query = request.json["query"]
-    citations, TOC = client.query(doc_id, query)
-    response = jsonify({"message": "Query was successful", "citations": citations, "TOC": TOC})
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    return response
+
 
 
 @api.before_request
