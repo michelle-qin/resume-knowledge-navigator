@@ -48,7 +48,7 @@ class backend:
             json_result = json.loads(json_text)
             final_TOC = self.add_tag_fields(json_result)
             self.TOCs[doc_id] = final_TOC
-            return json_result
+            return final_TOC
 
 
     def find_string_in_TOC(self, d, target, path=[]):
