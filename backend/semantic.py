@@ -75,7 +75,9 @@ class backend:
 
     def add_tags(self, TOC, resume_text, keyword):
         path = self.find_string_in_TOC(TOC, resume_text)
-        if path[0] == "workExperience":
+        if path is None:
+            TOC["tags"].append(keyword)
+        elif path[0] == "workExperience":
             work_experience_index = path[1]
             if 0 <= work_experience_index < len(TOC["workExperience"]):
                 TOC["workExperience"][work_experience_index]["tags"].append(keyword)
