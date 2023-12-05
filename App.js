@@ -19,7 +19,9 @@ export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
-  const [currentDocID, setCurrentDocID] = useState(null); // TODO: Use this to fetch the resume from the backend
+  const [currentDocID, setCurrentDocID] = useState(null);
+  const [iframeKey, setIframeKey] = useState(0);
+
   const fileInputRef = useRef(null);
 
   const data = {
@@ -48,52 +50,23 @@ export default function App() {
     }
   };
 
-  // const handleFileInput = (event) => {
-  //   const file = event.target.files[0];
-  //   if (file) {
-  //     setResumeUri(URL.createObjectURL(file));
-  //   }
-
-  //   // 1. CALL ADD DOC
-  //   fetch("/add_doc").then((response) =>
-  //     response.json().then((info) => {
-  //       setCurrentDocID(info.id);
-  //     })
-  //   );
-
-  //   // 2. DISPLAY ASSETS/PDF (using doc id)
-  // };
-
   const handleFileInput = async (event) => {
     const file = event.target.files[0];
-    console.log("FILE: ", file);
     if (file) {
-      // Prepare the file to be sent in a FormData object
       const formData = new FormData();
       formData.append("pdf_file", file);
-
-      console.log(formData.get("pdf_file")); // This should log the file object if it's been appended
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
-        console.log(value instanceof File);
-      }
 
       try {
         const response = await fetch("http://127.0.0.1:5000/add_doc", {
           method: "POST",
           body: formData,
         });
-        console.log("RESPONSE: ", response);
         if (response.status == 200) {
           const data = await response.json();
-          console.log("DATA: ", data);
           const docId = data.id;
-          console.log("DOCID: ", docId);
-          // const pdfUri = `assets/${docId}.pdf`;
-          const pdfUri = `http://127.0.0.1:5000/pdf/Rose Kuan Resume.pdf`; // TODO HARD CODING FOR NOW
-          console.log("PDF URI: ", pdfUri);
+          const pdfUri = `http://127.0.0.1:5000/pdf/${docId}.pdf`;
+          setCurrentDocID(docId);
           setResumeUri(pdfUri);
-          console.log("RESUME URI: ", resumeUri);
         } else {
           const errorData = await response.json();
           console.error("File upload error:", errorData.message);
@@ -104,14 +77,53 @@ export default function App() {
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (inputText.trim()) {
-      const newMessages = [
-        ...messages,
+      setMessages((prevMessages) => [
+        ...prevMessages,
         { text: inputText, time: new Date(), sender: "user" },
-      ];
-      setMessages(newMessages);
+        { text: "Thinking...", time: new Date(), sender: "ai" },
+      ]);
+
       setInputText("");
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/query", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            doc_id: currentDocID,
+            query: inputText,
+          }),
+        });
+
+        let aiMessageText;
+        if (response.status == 200) {
+          aiMessageText = "See highlights.";
+          setIframeKey((prevKey) => prevKey + 1);
+        } else {
+          aiMessageText = "I'm sorry, I can't find that info.";
+        }
+
+        // Replace "Thinking..." with the actual response
+        setMessages((prevMessages) => [
+          ...prevMessages.filter((message) => message.text !== "Thinking..."),
+          { text: aiMessageText, time: new Date(), sender: "ai" },
+        ]);
+      } catch (error) {
+        console.error("Network or other error:", error);
+
+        setMessages((prevMessages) => [
+          ...prevMessages.filter((message) => message.text !== "Thinking..."),
+          {
+            text: "There was an error, please try again.",
+            time: new Date(),
+            sender: "ai",
+          },
+        ]);
+      }
     }
   };
 
@@ -135,12 +147,16 @@ export default function App() {
           {/* Content for the Contents Column */}
           <ToC style={styles.toc} data={toc} doc_id={currentDocID} />
         </View>
-
         {/* View Column */}
         <View style={[styles.column, styles.viewColumn]}>
           <View style={styles.titleContainer}>
             <Text style={styles.columnTitle}>View</Text>
-            <Button title="Import Resume" onPress={pickDocument} />
+            <TouchableOpacity
+              onPress={pickDocument}
+              style={styles.importButton}
+            >
+              <Text style={styles.importButtonText}>Import Resume</Text>
+            </TouchableOpacity>
             <input
               type="file"
               accept="application/pdf"
@@ -152,6 +168,7 @@ export default function App() {
           <View style={styles.topBar}></View>
           {resumeUri ? (
             <iframe
+              key={iframeKey}
               src={resumeUri}
               style={styles.iframeStyle}
               title="Resume"
@@ -161,7 +178,6 @@ export default function App() {
             <></>
           )}
         </View>
-
         {/* Chat Column */}
         <View style={[styles.column, styles.chatColumn]}>
           <Text style={styles.columnTitle}>Chat</Text>
@@ -190,6 +206,7 @@ export default function App() {
               value={inputText}
               onChangeText={setInputText}
               placeholder="Enter your message..."
+              onSubmitEditing={sendMessage}
             />
             <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
               <Text style={styles.sendButtonText}>Send</Text>
@@ -236,20 +253,23 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "space-between",
+    width: "100%",
+    position: "relative",
   },
   iframeStyle: {
     width: "100%",
-    height: "calc(100% - 4px)", // Adjust height to take into account the topBar height
+    height: "calc(100% - 4px)",
     borderWidth: 0,
   },
   chatColumn: {
     backgroundColor: "#ececec",
+    flex: 1,
+    justifyContent: "flex-end",
   },
   messagesContainer: {
     flex: 1,
-    padding: 10,
     width: "100%",
   },
   messageBubble: {
@@ -273,12 +293,12 @@ const styles = StyleSheet.create({
   },
   aiMessage: {
     alignSelf: "flex-start",
-    backgroundColor: "#f0f0f0", // A light grey background for AI messages
+    backgroundColor: "#f0f0f0",
   },
   inputContainer: {
     flexDirection: "row",
     padding: 0,
-    width: "100%", // Make sure the container takes the full width of its parent
+    width: "100%",
   },
   input: {
     flex: 1,
@@ -307,5 +327,21 @@ const styles = StyleSheet.create({
   toc: {
     flex: 1,
     backgroundColor: "#ececec",
+  },
+  importButton: {
+    position: "absolute",
+    right: 15,
+    backgroundColor: "#007bff",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 10,
+  },
+  importButtonText: {
+    color: "#ffffff",
+    fontWeight: "500",
+    fontSize: 14,
   },
 });

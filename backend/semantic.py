@@ -3,10 +3,12 @@ import requests
 import json
 from openai_helper import get_client
 from sql_helpers import get_text_from_id
+from document_highlight import return_highlighted_pdf
 
 class backend:
     def __init__(self):
         self.client = get_client()
+        self.TOCs = {}
         
     def query_gpt4(self, prompt):
         response = self.client.chat.completions.create(
@@ -18,15 +20,6 @@ class backend:
     
     def get_keyword(self, query):
         return self.query_gpt4(f"What key characteristic the user is looking for in this resume?\n\nUser query: {query}\nKeywords:")
-    
-    def get_toc(self, doc_id):
-        if doc_id == "mock":
-            return self.metadata
-        else:
-            text = get_text_from_id(doc_id)
-            json_text = self.query_gpt4(f"You are a semantic parser. Use the following resume to populate a Json object \n\n Schema: {self.schema}\n\ndocument: {text}\nJSON:")
-            json_result = json.loads(json_text)
-            return json_result
 
     def add_tag_fields(self, TOC):
         new_TOC = TOC
@@ -43,6 +36,20 @@ class backend:
                     entry["tags"] = []
 
         return new_TOC
+
+    def get_toc(self, doc_id):
+        if doc_id == "mock":
+            return self.metadata
+        elif doc_id in self.TOCs.keys():
+            return self.TOCs[doc_id]
+        else:
+            text = get_text_from_id(doc_id)
+            json_text = self.query_gpt4(f"You are a semantic parser. Use the following resume to populate a Json object \n\n Schema: {self.schema}\n\ndocument: {text}\nJSON:")
+            json_result = json.loads(json_text)
+            final_TOC = self.add_tag_fields(json_result)
+            self.TOCs[doc_id] = final_TOC
+            return json_result
+
 
     def find_string_in_TOC(self, d, target, path=[]):
         for key, value in d.items():
@@ -78,6 +85,16 @@ class backend:
                 TOC["education"][education_index]["tags"].append(keyword)
         else:
             TOC["tags"].append(keyword)
+
+
+    def query(self, doc_id, prompt):
+        keyword = self.get_keyword(prompt)
+        TOC = self.get_toc(doc_id)
+        citations = return_highlighted_pdf(doc_id, prompt)
+        for citation in citations:
+            self.add_tags(TOC, citation, keyword)
+        return citations, TOC
+
 
     schema = {
         "$schema": "http://json-schema.org/draft-07/schema#",

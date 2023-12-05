@@ -83,16 +83,12 @@ def reset_db():
     return jsonify({"message": "Reset database"}), 200
 
 
-@api.route("/query", methods=["GET"])
+@api.route("/query", methods=["POST"])
 def paper_search():
-    print(request.json)
-    doc_id = request.json['doc_id']
-    query = request.json['query']
-    citations = return_highlighted_pdf(doc_id, query)
-    response = jsonify({"message":"Query was successful", "citations": citations})
     doc_id = request.json["doc_id"]
     query = request.json["query"]
-    response = jsonify(return_highlighted_pdf(doc_id, query))
+    citations, TOC = client.query(doc_id, query)
+    response = jsonify({"message": "Query was successful", "citations": citations, "TOC": TOC})
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response, 200
 
@@ -117,6 +113,8 @@ def get_toc():
     return response
 
 
+
+
 @api.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
@@ -130,10 +128,9 @@ def handle_preflight():
 
 @api.route("/pdf/<filename>")
 def serve_pdf(filename):
-    return send_from_directory(
-        "/Users/michelleqin/Documents/resumes-knowledge-navigator/backend/pdf",
-        filename,
-    )
+    root_path = os.path.abspath("..")
+    assets_path = os.path.join(root_path, "assets")
+    return send_from_directory(assets_path, filename)
 
 
 if __name__ == "__main__":
