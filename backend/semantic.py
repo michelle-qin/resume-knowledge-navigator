@@ -95,7 +95,11 @@ class backend:
         citations = return_highlighted_pdf(doc_id, prompt)
         for citation in citations:
             self.add_tags(TOC, citation, keyword)
-        return citations, TOC
+        return citations, TOC 
+
+    def inject_query(self, prompt, highlighted_text):
+        return self.query_gpt4(f"You are a semantic parser. Rephrase the following query to incorporate the asker's intent given the text the asker has highlighted and refers to. The query is: {prompt}. The text to incorporate into the query is: {highlighted_text}.")
+
 
 
     schema = {

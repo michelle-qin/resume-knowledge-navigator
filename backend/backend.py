@@ -92,6 +92,16 @@ def paper_search():
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response, 200
 
+
+@api.route("/inject_highlighted", methods=["POST"])
+def get_injected_prompt():
+    og_query = request.json["og_query"]
+    highlighted_text = request.json["highlighted_text"]
+    injected_prompt = client.inject_query(og_query, highlighted_text)
+    response = jsonify({"message": "Query was successful", "injected_prompt": injected_prompt})
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response, 200
+
 @api.route("/query_multiple", methods=["POST"])
 def multiple_doc_search():
     print("Here")

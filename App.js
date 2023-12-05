@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { default as ReactReduxFromImport, Provider } from "react-redux";
 import {
   StyleSheet,
@@ -14,6 +14,7 @@ import { ModalityProvider } from "reactgenie-lib";
 import { reactGenieStore } from "./store.js";
 
 import ENV from "./config.js";
+import { StoreExamples } from "./genie/store.ts";
 
 export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
@@ -21,6 +22,7 @@ export default function App() {
   const [inputText, setInputText] = useState("");
   const [currentDocID, setCurrentDocID] = useState(null);
   const [iframeKey, setIframeKey] = useState(0);
+  const [highlighted, setHighlighted] = useState("");
 
   const fileInputRef = useRef(null);
 
@@ -88,6 +90,27 @@ export default function App() {
       setInputText("");
 
       try {
+        let query = inputText;
+
+        // incorporate highlighted text into query
+        if (highlighted && highlighted.length > 0) {
+          const highlightResponse = await fetch("http://127.0.0.1:5000/inject_highlighted", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              og_query: inputText,
+              highlighted_text: highlighted
+            }),
+          });
+
+          const jsonResponse = await highlightResponse.json();
+          query = jsonResponse.injected_prompt;
+        }
+
+        console.log(query);
+
         const response = await fetch("http://127.0.0.1:5000/query", {
           method: "POST",
           headers: {
@@ -95,7 +118,7 @@ export default function App() {
           },
           body: JSON.stringify({
             doc_id: currentDocID,
-            query: inputText,
+            query: query,
           }),
         });
 
@@ -130,6 +153,7 @@ export default function App() {
   return (
     <Provider store={reactGenieStore}>
       {/* <ModalityProvider
+        examples={StoreExamples}
         displayTranscript={true}
         codexApiKey={ENV.OPENAI_API_KEY}
         codexApiBaseUrl={ENV.OPENAI_API_BASE_URL}
@@ -200,6 +224,24 @@ export default function App() {
               </View>
             ))}
           </ScrollView>
+          <View style={styles.highlightedContainer}>
+            {highlighted && highlighted.length > 0 ? (
+              <>
+                <View style={styles.highlightedText}>
+                  <Text>{highlighted}</Text>
+                </View>
+                <Button color="#FFA500" title="Remove text from query" onPress={() => {
+                  setHighlighted("");
+                }} />
+              </>
+            ) : (
+              <Button title="Add highlighted text to query" onPress={() => {
+                setHighlighted(window.getSelection().toString());
+              }} />
+            )
+
+            }
+          </View>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
@@ -215,7 +257,7 @@ export default function App() {
         </View>
       </View>
       {/* </ModalityProvider> */}
-    </Provider>
+    </Provider >
   );
 }
 
@@ -344,4 +386,14 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: 14,
   },
+  highlightedContainer: {
+    flexDirection: "row",
+    width: "100%",
+    flexDirection: "flex-start",
+  },
+  highlightedText: {
+    backgroundColor: "#E7E9FD",
+    padding: 10,
+  },
 });
+
