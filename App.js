@@ -14,7 +14,6 @@ import { ModalityProvider } from "reactgenie-lib";
 import { reactGenieStore } from "./store.js";
 
 import ENV from "./config.js";
-import { StoreExamples } from "./genie/store.ts";
 
 export default function App() {
   const [resumeUri, setResumeUri] = useState(null);

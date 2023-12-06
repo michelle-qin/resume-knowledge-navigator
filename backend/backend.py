@@ -115,7 +115,7 @@ def multiple_doc_search():
     return response, 200
 
 
-@api.route("/get_toc", methods=["GET"])
+@api.route("/get_toc", methods=["GET", 'POST'])
 def get_toc():
     doc_id = request.json["doc_id"]
     response = jsonify(client.get_toc(doc_id))
