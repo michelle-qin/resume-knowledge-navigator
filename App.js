@@ -326,10 +326,7 @@ export default function App() {
               style={styles.picker}
               selectedValue={currentDocName}
               onValueChange={(itemValue, itemIndex) => {
-                console.log(itemValue);
-                console.log(itemIndex);
-                const selectedFile = uploadedFiles[itemIndex];
-                console.log(selectedFile);
+                const selectedFile = uploadedFiles.find((file) => file.name === itemValue);
                 setCurrentDocName(selectedFile.name)
                 setCurrentDocID(selectedFile.docId);
                 setResumeUri(selectedFile.pdfUri);
@@ -344,10 +341,6 @@ export default function App() {
                 ))}
             </Picker>
             <Text style={styles.columnTitle}>View</Text>
-            <Button onPress={() => {
-              console.log(uploadedFiles);
-              console.log(docsToShow);
-            }} />
             <TouchableOpacity
               onPress={pickDocument}
               style={styles.importButton}
