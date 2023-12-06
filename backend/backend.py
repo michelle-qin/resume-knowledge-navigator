@@ -47,7 +47,7 @@ def add_doc():
                 os.remove(target_path)
             shutil.copy(file_path, target_path)
 
-            return jsonify({"message": "File successfully uploaded", "id": doc_id}), 200
+            return jsonify({"message": "File successfully uploaded", "id": doc_id, "filename": file.filename}), 200
         else:
             return jsonify({"message": "Invalid file format. Needs to be a pdf"}), 400
     except Exception as e:
@@ -123,8 +123,6 @@ def get_toc():
     return response
 
 
-
-
 @api.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
@@ -138,10 +136,10 @@ def handle_preflight():
 
 @api.route("/pdf/<filename>")
 def serve_pdf(filename):
-    return send_from_directory(
-        "C:/Users/danil/code/stanford/cs227/resumes-knowledge-navigator/assets",
-        filename,
-    )
+    root_path = os.path.abspath("..")
+    assets_path = os.path.join(root_path, "assets")
+    return send_from_directory(assets_path, filename)
+
 
 
 if __name__ == "__main__":
