@@ -8,9 +8,21 @@ function Render_object (props) {
 
 
     return (
+            
+        <View style = {styles.exp_container}>
+            <FlatList
+                style = {styles.exp_flatlist}
+                data = {props.keys}
+                renderItem = {({item}) => 
 
-        {}
-
+                    <View style = {{flexDirection: 'row', alignContent: 'center'}}>
+                     <Text style = {styles.exp_flatlist_item_text}>{item} </Text> 
+                     <Text style = {{fontSize: 14, padding: 4}}> {props.data[item]} </Text>
+                    </View>
+                }
+            />
+        </View> 
+        
 
     )
 
@@ -27,13 +39,38 @@ function Conditional_render_toc_item(props) {
                 <Text>{props.content}</Text>
             </View>
 
-        ) : (props.expanded && typeof (props.content) == 'object') ? (
+        ) : (props.expanded && typeof (props.content) == 'object' && props.header == 'basic_info') ? (
 
             <Render_object keys = {Object.keys(props.content)} data = {props.content}/>
 
-        ) : console.log('all conditions failed')
+        ) : (props.expanded && typeof (props.content) == 'object' && props.header == 'education') ? (
+        
+            <FlatList
+                sytle = {styles.exp_flatlist}
+                data = {Object.keys(props.content)}
+                renderItem = {({item}) => 
+                
+                    <Render_object keys = {Object.keys(props.content[item])} data = {props.content[item]}/>
+            
+                }
+            />
 
-    );
+        ) : (props.expanded && typeof (props.content) == 'object' && props.header == 'work_experience') ? (
+        
+            <FlatList
+                sytle = {styles.exp_flatlist}
+                data = {Object.keys(props.content)}
+                renderItem = {({item}) => 
+                
+                    <Render_object keys = {Object.keys(props.content[item])} data = {props.content[item]}/>
+            
+                }
+            />
+
+        ) : console.log("unhandled")
+
+    )
+        
 }
 
 //takes props header, content 
@@ -42,13 +79,16 @@ const Toc_item = (props) => {
     console.log("In TOC Item")
     console.log(props.header)
     console.log(props.content)
+    console.log(typeof(props.content))
 
 
     const [expanded, setExpanded] = React.useState(false);
 
     return (
 
-        <View style={styles.toc_item}>
+        (props.content == null || props.content.length == 0 || props.content == {}) ? (null) : 
+
+        (<View style={styles.toc_item}>
 
             <Pressable style={styles.toc_section} onPress={() => setExpanded(!expanded)}>
 
@@ -71,10 +111,10 @@ const Toc_item = (props) => {
 
             <View style={styles.parentHr} />
 
-            <Conditional_render_toc_item expanded={expanded} content={props.content} />
+            <Conditional_render_toc_item expanded={expanded} header = {props.header} content={props.content} />
 
-        </View>
-
+        </View>)
+        
 
     );
 
@@ -198,9 +238,24 @@ const styles = StyleSheet.create({
     exp_flatlist_item_text: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: colors.gray09,
+        width : 100,
+        color: colors.gray00,
     },
-
+    basic_info: {
+        backgroundColor: "#ececec",
+        flex: 1,
+        padding: 4,
+    },
+    basic_info_flatlist: {
+        backgroundColor: "#ececec",
+        flex: 1,
+        padding: 4,
+    },
+    basic_info_text: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: colors.gray00,
+    },
 });
 
 
