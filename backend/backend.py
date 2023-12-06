@@ -47,7 +47,7 @@ def add_doc():
                 os.remove(target_path)
             shutil.copy(file_path, target_path)
 
-            return jsonify({"message": "File successfully uploaded", "id": doc_id}), 200
+            return jsonify({"message": "File successfully uploaded", "id": doc_id, "filename": file.filename}), 200
         else:
             return jsonify({"message": "Invalid file format. Needs to be a pdf"}), 400
     except Exception as e:
@@ -121,8 +121,6 @@ def get_toc():
     response = jsonify(client.get_toc(doc_id))
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
-
-
 
 
 @api.before_request

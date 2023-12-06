@@ -9,21 +9,31 @@ import {
   TouchableOpacity,
   Button,
 } from "react-native";
+
+import { SvgUri } from 'react-native-svg';
+import { Picker } from "@react-native-picker/picker";
 import ToC from "./components/ToC.js";
 import { ModalityProvider } from "reactgenie-lib";
 import { reactGenieStore } from "./store.js";
 
 import ENV from "./config.js";
+import { StoreExamples } from "./genie/store.ts";
+import SvgComponent from "./svg.js";
 
 export default function App() {
   const [resumeUri, setResumeUri] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [currentDocID, setCurrentDocID] = useState(null);
+  const [currentDocName, setCurrentDocName] = useState(null);
   const [iframeKey, setIframeKey] = useState(0);
   const [highlighted, setHighlighted] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [docsToShow, setDocsToShow] = useState([]);
 
   const fileInputRef = useRef(null);
+  // const fileInputRefs = useRef(Array.from({ length: numberOfFileInputs }, () => createRef()));
+
 
   const data = {
     Summary:
@@ -50,6 +60,55 @@ export default function App() {
       console.error("The file input is not yet available.");
     }
   };
+
+  const handleMultipleFileSelect = async (event) => {
+    const chosenFiles = Array.prototype.slice.call(event.target.files);
+    handleMultipleFileUpload(chosenFiles);
+  }
+
+  const handleMultipleFileUpload = async (chosenFiles) => {
+    for (let i = 0; i < chosenFiles.length; i++) {
+      const file = chosenFiles[i];
+      const formData = new FormData();
+      formData.append("pdf_file", file);
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/add_doc", {
+          method: "POST",
+          body: formData,
+        });
+        if (response.status == 200) {
+          const data = await response.json();
+          const docId = data.id;
+          const pdfUri = `http://127.0.0.1:5000/pdf/${docId}.pdf`;
+          const name = data.filename;
+
+          if (!uploadedFiles.some(file => file.docId === docId)) {
+            const pdf = {
+              docId: docId,
+              pdfUri: pdfUri,
+              name: name,
+            };
+            setUploadedFiles(prevFiles => [...prevFiles, pdf]);
+            setDocsToShow(prev => [...prev, docId]);
+          }
+
+          if (i == 0) {
+            setResumeUri(pdfUri);
+            setCurrentDocID(docId);
+            setCurrentDocName(name);
+          }
+
+        } else {
+          const errorData = await response.json();
+          console.error("File upload error:", errorData.message);
+        }
+      } catch (error) {
+        console.error("Network or other error", error);
+      }
+    }
+
+  }
 
   const handleFileInput = async (event) => {
     const file = event.target.files[0];
@@ -149,6 +208,96 @@ export default function App() {
     }
   };
 
+  const filterDocuments = async () => {
+    if (inputText.trim()) {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { text: inputText, time: new Date(), sender: "user" },
+        { text: "Thinking...", time: new Date(), sender: "ai" },
+      ]);
+
+      setInputText("");
+
+      try {
+        let query = inputText;
+
+        // incorporate highlighted text into query
+        if (highlighted && highlighted.length > 0) {
+          const highlightResponse = await fetch("http://127.0.0.1:5000/inject_highlighted", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              og_query: inputText,
+              highlighted_text: highlighted
+            }),
+          });
+
+          const jsonResponse = await highlightResponse.json();
+          query = jsonResponse.injected_prompt;
+        }
+
+        console.log(query);
+
+        const docIds = uploadedFiles.map((file) => file.docId);
+        console.log(docIds);
+
+        const response = await fetch("http://127.0.0.1:5000/query_multiple", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            doc_ids: docIds,
+            query: query,
+          }),
+        });
+
+        console.log(response);
+        const multipleResponse = await response.json();
+        const nestedObject = Object.values(multipleResponse)[1];
+
+        let docIdsToShow = [];
+        console.log(nestedObject);
+
+        for (let i = 0; i < nestedObject.length; i++) {
+          if (nestedObject[i] !== "None") {
+            docIdsToShow.push(docIds[i]);
+          }
+        }
+
+        console.log(docIdsToShow);
+        setDocsToShow(docIdsToShow);
+
+        let aiMessageText;
+        if (response.status == 200) {
+          aiMessageText = "Updated document list.";
+          // setIframeKey((prevKey) => prevKey + 1);
+        } else {
+          aiMessageText = "I'm sorry, I can't update the list.";
+        }
+
+        // Replace "Thinking..." with the actual response
+        setMessages((prevMessages) => [
+          ...prevMessages.filter((message) => message.text !== "Thinking..."),
+          { text: aiMessageText, time: new Date(), sender: "ai" },
+        ]);
+      } catch (error) {
+        console.error("Network or other error:", error);
+
+        setMessages((prevMessages) => [
+          ...prevMessages.filter((message) => message.text !== "Thinking..."),
+          {
+            text: "There was an error, please try again.",
+            time: new Date(),
+            sender: "ai",
+          },
+        ]);
+      }
+    }
+  };
+
   return (
     <Provider store={reactGenieStore}>
       {/* <ModalityProvider
@@ -173,7 +322,32 @@ export default function App() {
         {/* View Column */}
         <View style={[styles.column, styles.viewColumn]}>
           <View style={styles.titleContainer}>
+            <Picker
+              style={styles.picker}
+              selectedValue={currentDocName}
+              onValueChange={(itemValue, itemIndex) => {
+                console.log(itemValue);
+                console.log(itemIndex);
+                const selectedFile = uploadedFiles[itemIndex];
+                console.log(selectedFile);
+                setCurrentDocName(selectedFile.name)
+                setCurrentDocID(selectedFile.docId);
+                setResumeUri(selectedFile.pdfUri);
+              }}
+            >
+              {uploadedFiles
+                .filter((file) => {
+                  return docsToShow.includes(file.docId);
+                })
+                .map((file, index) => (
+                  <Picker.Item key={index} label={file.name} value={file.name} />
+                ))}
+            </Picker>
             <Text style={styles.columnTitle}>View</Text>
+            <Button onPress={() => {
+              console.log(uploadedFiles);
+              console.log(docsToShow);
+            }} />
             <TouchableOpacity
               onPress={pickDocument}
               style={styles.importButton}
@@ -183,9 +357,10 @@ export default function App() {
             <input
               type="file"
               accept="application/pdf"
+              multiple
               ref={fileInputRef}
               style={{ display: "none" }}
-              onChange={handleFileInput}
+              onChange={handleMultipleFileSelect}
             />
           </View>
           <View style={styles.topBar}></View>
@@ -242,6 +417,15 @@ export default function App() {
             }
           </View>
           <View style={styles.inputContainer}>
+            <TouchableOpacity
+              onPress={filterDocuments}
+              style={{
+                padding: 4, backgroundColor: "white", borderWidth: 1,
+                borderColor: "#999",
+                borderRadius: 0,
+              }}>
+              <SvgComponent />
+            </TouchableOpacity>
             <TextInput
               style={styles.input}
               value={inputText}
@@ -294,7 +478,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
     position: "relative",
@@ -370,15 +554,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#ececec",
   },
   importButton: {
-    position: "absolute",
-    right: 15,
+    // position: "absolute",
+    // right: 15,
     backgroundColor: "#007bff",
     paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 2,
     borderRadius: 2,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 10,
+    width: 120,
+    marginLeft: 80,
+    marginRight: 10,
   },
   importButtonText: {
     color: "#ffffff",
@@ -394,5 +580,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#E7E9FD",
     padding: 10,
   },
+  picker: {
+    width: 200,
+    marginLeft: 10,
+  }
 });
 
