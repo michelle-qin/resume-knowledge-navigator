@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import colors from '../colors';
 //dummy data
 
+<<<<<<< HEAD
 function Render_object (props) {
 
 
@@ -23,6 +24,27 @@ function Render_object (props) {
             />
         </View> 
         
+=======
+function Render_object(props) {
+
+
+    return (
+
+        <View style={styles.exp_container}>
+            <FlatList
+                style={styles.exp_flatlist}
+                data={props.keys}
+                renderItem={({ item }) =>
+
+                    <View style={{ flexDirection: 'row', alignContent: 'center' }}>
+                        <Text style={styles.exp_flatlist_item_text}>{item} </Text>
+                        <Text style={{ fontSize: 14, padding: 4 }}> {props.data[item]} </Text>
+                    </View>
+                }
+            />
+        </View>
+
+>>>>>>> 34bbc1a (TOC integrated)
 
     )
 
@@ -41,6 +63,7 @@ function Conditional_render_toc_item(props) {
 
         ) : (props.expanded && typeof (props.content) == 'object' && props.header == 'basic_info') ? (
 
+<<<<<<< HEAD
             <Render_object keys = {Object.keys(props.content)} data = {props.content}/>
 
         ) : (props.expanded && typeof (props.content) == 'object' && props.header == 'education') ? (
@@ -68,6 +91,37 @@ function Conditional_render_toc_item(props) {
             />
 
         ) : console.log("unhandled")
+=======
+            <Render_object keys={Object.keys(props.content)} data={props.content} />
+
+        ) : (props.expanded && typeof (props.content) == 'object' && props.header == 'education') ? (
+
+            <FlatList
+                sytle={styles.exp_flatlist}
+                data={Object.keys(props.content)}
+                renderItem={({ item }) =>
+
+                    <Render_object keys={Object.keys(props.content[item])} data={props.content[item]} />
+
+                }
+            />
+
+        ) : (props.expanded && typeof (props.content) == 'object' && props.header == 'work_experience') ? (
+
+            <FlatList
+                sytle={styles.exp_flatlist}
+                data={Object.keys(props.content)}
+                renderItem={({ item }) =>
+
+                    <Render_object keys={Object.keys(props.content[item])} data={props.content[item]} />
+
+                }
+            />
+
+        ) : console.log("unhandled")
+
+    )
+>>>>>>> 34bbc1a (TOC integrated)
 
     )
         
@@ -79,19 +133,28 @@ const Toc_item = (props) => {
     console.log("In TOC Item")
     console.log(props.header)
     console.log(props.content)
+<<<<<<< HEAD
     console.log(typeof(props.content))
+=======
+    console.log(typeof (props.content))
+>>>>>>> 34bbc1a (TOC integrated)
 
 
     const [expanded, setExpanded] = React.useState(false);
 
     return (
 
+<<<<<<< HEAD
         (props.content == null || props.content.length == 0 || props.content == {}) ? (null) : 
 
         (<View style={styles.toc_item}>
+=======
+        (props.content == null || props.content.length == 0 || props.content == {}) ? (null) :
+>>>>>>> 34bbc1a (TOC integrated)
 
-            <Pressable style={styles.toc_section} onPress={() => setExpanded(!expanded)}>
+            (<View style={styles.toc_item}>
 
+<<<<<<< HEAD
                 <Text style={[styles.section_title]}>{
 
                     props.header == "basic_info" ? "Basic Info" :
@@ -106,12 +169,36 @@ const Toc_item = (props) => {
                     ""
                 }</Text>
                 <Icon name={expanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} size={30} color={colors.gray00} />
+=======
+                <Pressable style={styles.toc_section} onPress={() => setExpanded(!expanded)}>
+>>>>>>> 34bbc1a (TOC integrated)
 
-            </Pressable>
+                    <Text style={[styles.section_title]}>{
 
-            <View style={styles.parentHr} />
+                        props.header == "basic_info" ? "Basic Info" :
+                            props.header == "education" ? "Education" :
+                                props.header == "hobbies" ? "Hobbies" :
+                                    props.header == "skills" ? "Skills" :
+                                        props.header == 'languages' ? 'Languages' :
+                                            props.header == 'references' ? 'References' :
+                                                props.header == 'summary' ? 'Summary' :
+                                                    props.header == 'tags' ? 'Tags' :
+                                                        props.header == 'work_experience' ? 'Work Experience' :
+                                                            ""
+                    }</Text>
+                    <Icon name={expanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} size={30} color={colors.gray00} />
 
+<<<<<<< HEAD
             <Conditional_render_toc_item expanded={expanded} header = {props.header} content={props.content} />
+=======
+                </Pressable>
+
+                <View style={styles.parentHr} />
+
+                <Conditional_render_toc_item expanded={expanded} header={props.header} content={props.content} />
+
+            </View>)
+>>>>>>> 34bbc1a (TOC integrated)
 
         </View>)
         
@@ -128,6 +215,7 @@ const ToC = (props) => {
     const [listDataSource, setListDataSource] = React.useState(props.data);
 
 
+<<<<<<< HEAD
     const toc_request = async () => {
 
         try {
@@ -163,13 +251,50 @@ const ToC = (props) => {
         toc_request();
 
     }, [props.doc_id]);
+=======
+    // const toc_request = async () => {
+
+    //     try {
+
+    //         const response = await fetch('http://127.0.0.1:5000/get_toc', {
+    //             method: 'POST',
+    //             headers: {
+    //                 Accept: 'application/json',
+    //                 'Content-Type': 'application/json'
+    //             },
+    //             body: JSON.stringify({
+    //                 "doc_id": props.doc_id
+    //             })
+    //         }).then(async (response) => {
+    //             const data = await response.json();
+    //             console.log(data)
+    //             setListDataSource(data);
+
+    //         }
+
+    //         )
+
+    //     } catch (error) {
+    //         console.error(error);
+    //     }
+
+    // }
+
+    // React.useEffect(() => {
+
+    //     toc_request();
+
+    // }, [props.doc_id]);
+>>>>>>> 34bbc1a (TOC integrated)
 
     return (
-        <FlatList
-            style={styles.toc_container}
-            data={Object.keys(listDataSource)}
-            renderItem={({ item }) => <Toc_item header={item} content={listDataSource[item]} />}
-        />
+        listDataSource && (
+            <FlatList
+                style={styles.toc_container}
+                data={Object.keys(listDataSource)}
+                renderItem={({ item }) => <Toc_item header={item} content={listDataSource[item]} />}
+            />
+        )
 
     );
 
@@ -238,7 +363,11 @@ const styles = StyleSheet.create({
     exp_flatlist_item_text: {
         fontSize: 14,
         fontWeight: 'bold',
+<<<<<<< HEAD
         width : 100,
+=======
+        width: 100,
+>>>>>>> 34bbc1a (TOC integrated)
         color: colors.gray00,
     },
     basic_info: {

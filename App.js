@@ -30,28 +30,139 @@ export default function App() {
   const [highlighted, setHighlighted] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [docsToShow, setDocsToShow] = useState([]);
+  const [tocLoading, setTocLoading] = useState(false);
 
   const fileInputRef = useRef(null);
   // const fileInputRefs = useRef(Array.from({ length: numberOfFileInputs }, () => createRef()));
 
 
   const data = {
-    Summary:
-      "Accounting professional with twenty years of experience in inventory and manufacturing accounting. Ability to fill in at a moment's notice, quickly mastering new systems, processes and workflows. Take charge attitude, ability to work independently, recommend and implement ideas and process improvements.",
-    Skills:
-      "Microsoft Office Excel, Outlook and Word, SAGE 100, Ramp (WMS software) and Syspro (ERP program)",
-    Experience: [
-      "Company Name City , State Accountant 04/2011 to 05/2017",
-      "Company Name City , State Inventory Control Manager 01/2008 to 01/2010",
-      "Company Name City , State Accounting Manager 01/1995 to 01/2008",
-      "Company Name City , State Full Charge Bookkeeper 01/1993 to 01/1995",
+    "basic_info": {
+      "email": "",
+      "first_name": "Marianne",
+      "github": "",
+      "last_name": "Elbertson",
+      "linkedin": "",
+      "phone": "",
+      "website": ""
+    },
+    "education": [
+      {
+        "degree": "Graduate Certificate",
+        "description": "Washington Representatives Program",
+        "end_date": "1994",
+        "institution": "George Washington University",
+        "start_date": "",
+        "tags": []
+      },
+      {
+        "degree": "Bachelor of Arts",
+        "description": "Radio/Television/Film Production",
+        "end_date": "1986",
+        "institution": "University of Maryland",
+        "start_date": "",
+        "tags": []
+      }
     ],
-    "Education and Training":
-      "B.S : Business Administration Accounting Montclair State College Business Administration Accounting",
-    "Additional Skills":
-      "accounting, general accounting, accruals, ADP, Ad, balance, budget, business process improvement, cash flow, closing, cost control, credit, customer service, database, debit, documentation, ERP, financial, financial statements, general ledger, human resource, insurance, Inventory, inventory levels, logistics, MAS90, Excel, Microsoft Office, Outlook, Word, negotiations, payroll, PL, processes, progress, purchasing, receiving, repairing, researching, SAGE, sales, spreadsheet, tax, year-end",
-  };
-  const [toc, setToc] = useState(data);
+    "hobbies": [
+      "Member of the Daughters of the American Revolution",
+      "Member of the Colonial Dames 17th Century Society",
+      "Former President of the Mount Vernon Terrace Community Association"
+    ],
+    "languages": [],
+    "references": [],
+    "skills": [
+      "Self starter",
+      "Effective strategic planning",
+      "Strong leadership skills",
+      "Excellent relationship building skills",
+      "Resourceful and persistent"
+    ],
+    "summary": "Experience as public relations professional, strategist, analyst, and publicist...",
+    "tags": [],
+    "work_experience": [
+      {
+        "company": "Company Name",
+        "description": "Serve as Subject Matter Expert and...",
+        "end_date": "Current",
+        "position": "Senior Food Defense Analyst",
+        "start_date": "Dec 2003"
+      },
+      {
+        "company": "Company Name",
+        "description": "Conducted public relation activities...",
+        "end_date": "Nov 2003",
+        "position": "Public Affairs Specialist",
+        "start_date": "Jan 2000"
+      },
+      {
+        "company": "Company Name",
+        "description": "Assisted Director and Manager...",
+        "end_date": "Dec 1999",
+        "position": "Government Relations Associate",
+        "start_date": "Jan 1995"
+      },
+      {
+        "company": "Company Name",
+        "description": "Effectively responded to media inquiries...",
+        "end_date": "Apr 1994",
+        "position": "Public Affairs Specialist",
+        "start_date": "Jan 1990"
+      },
+      {
+        "company": "Company Name",
+        "description": "Researched and pitched story ideas...",
+        "end_date": "Mar 1989",
+        "position": "Assistant Publicist",
+        "start_date": "Aug 1987"
+      },
+      {
+        "company": "Company Name",
+        "description": "Prepared documents for purchasers...",
+        "end_date": "Aug 1987",
+        "position": "Administrative Assistant",
+        "start_date": "Jul 1986"
+      }
+    ]
+  }
+  const [toc, setToc] = useState(null);
+
+  const toc_request = async () => {
+
+    try {
+
+      setTocLoading(true);
+      const response = await fetch('http://127.0.0.1:5000/get_toc', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "doc_id": currentDocID
+        })
+      }).then(async (response) => {
+        const data = await response.json();
+        console.log(data)
+        setToc(data.properties ? data.properties : data);
+        setTocLoading(false);
+
+      }
+
+      )
+
+    } catch (error) {
+      console.error(error);
+      setTocLoading(false);
+    }
+
+  }
+
+  useEffect(() => {
+    if (currentDocID) {
+      toc_request();
+    }
+  }, [currentDocID])
 
   const pickDocument = () => {
     if (fileInputRef.current) {
@@ -107,7 +218,6 @@ export default function App() {
         console.error("Network or other error", error);
       }
     }
-
   }
 
   const handleFileInput = async (event) => {
@@ -184,6 +294,8 @@ export default function App() {
         if (response.status == 200) {
           aiMessageText = "See highlights.";
           setIframeKey((prevKey) => prevKey + 1);
+          const messageResponseJson = await response.json();
+          console.log(messageResponseJson.TOC)
         } else {
           aiMessageText = "I'm sorry, I can't find that info.";
         }
@@ -317,7 +429,7 @@ export default function App() {
           <Text style={styles.columnTitle}>Contents</Text>
           <View style={styles.topBar}></View>
           {/* Content for the Contents Column */}
-          <ToC style={styles.toc} data={toc} doc_id={currentDocID} />
+          {tocLoading ? (<Text>Table of Contents Loading...</Text>) : (<ToC style={styles.toc} data={toc} doc_id={currentDocID} />)}
         </View>
         {/* View Column */}
         <View style={[styles.column, styles.viewColumn]}>
