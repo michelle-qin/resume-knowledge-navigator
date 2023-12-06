@@ -136,10 +136,10 @@ def handle_preflight():
 
 @api.route("/pdf/<filename>")
 def serve_pdf(filename):
-    return send_from_directory(
-        "C:/Users/danil/code/stanford/cs227/resumes-knowledge-navigator/assets",
-        filename,
-    )
+    root_path = os.path.abspath("..")
+    assets_path = os.path.join(root_path, "assets")
+    return send_from_directory(assets_path, filename)
+
 
 
 if __name__ == "__main__":

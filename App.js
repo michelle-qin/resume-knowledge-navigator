@@ -33,7 +33,19 @@ export default function App() {
   const [tocLoading, setTocLoading] = useState(false);
 
   const fileInputRef = useRef(null);
-  // const fileInputRefs = useRef(Array.from({ length: numberOfFileInputs }, () => createRef()));
+
+  // useEffect(() => {
+  //   fetch('http://127.0.0.1:5000/reset', {
+  //     method: 'POST',
+  //     // headers: {
+  //     //   Accept: 'application/json',
+  //     //   'Content-Type': 'application/json'
+  //     // },
+  //     // body: JSON.stringify({
+  //     //   "doc_id": currentDocID
+  //     // })
+  //   })
+  // }, [])
 
 
   const data = {
@@ -130,7 +142,6 @@ export default function App() {
   const toc_request = async () => {
 
     try {
-
       setTocLoading(true);
       const response = await fetch('http://127.0.0.1:5000/get_toc', {
         method: 'POST',
@@ -143,10 +154,9 @@ export default function App() {
         })
       }).then(async (response) => {
         const data = await response.json();
-        console.log(data)
-        setToc(data.properties ? data.properties : data);
+        console.log(data);
+        setToc(data);
         setTocLoading(false);
-
       }
 
       )
