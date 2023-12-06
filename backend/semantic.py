@@ -8,6 +8,7 @@ from document_highlight import return_highlighted_pdf
 class backend:
     def __init__(self):
         self.client = get_client()
+        self.TOCs = {}
         
     def query_gpt4(self, prompt):
         response = self.client.chat.completions.create(
@@ -19,15 +20,6 @@ class backend:
     
     def get_keyword(self, query):
         return self.query_gpt4(f"What key characteristic the user is looking for in this resume?\n\nUser query: {query}\nKeywords:")
-    
-    def get_toc(self, doc_id):
-        if doc_id == "mock":
-            return self.metadata
-        else:
-            text = get_text_from_id(doc_id)
-            json_text = self.query_gpt4(f"You are a semantic parser. Use the following resume to populate a Json object \n\n Schema: {self.schema}\n\ndocument: {text}\nJSON:")
-            json_result = json.loads(json_text)
-            return json_result
 
     def add_tag_fields(self, TOC):
         new_TOC = TOC
@@ -44,6 +36,20 @@ class backend:
                     entry["tags"] = []
 
         return new_TOC
+
+    def get_toc(self, doc_id):
+        if doc_id == "mock":
+            return self.metadata
+        elif doc_id in self.TOCs.keys():
+            return self.TOCs[doc_id]
+        else:
+            text = get_text_from_id(doc_id)
+            json_text = self.query_gpt4(f"You are a semantic parser. Use the following resume to populate a Json object \n\n Schema: {self.schema}\n\ndocument: {text}\nJSON:")
+            json_result = json.loads(json_text)
+            final_TOC = self.add_tag_fields(json_result)
+            self.TOCs[doc_id] = final_TOC
+            return final_TOC
+
 
     def find_string_in_TOC(self, d, target, path=[]):
         for key, value in d.items():
@@ -69,7 +75,9 @@ class backend:
 
     def add_tags(self, TOC, resume_text, keyword):
         path = self.find_string_in_TOC(TOC, resume_text)
-        if path[0] == "workExperience":
+        if path is None:
+            TOC["tags"].append(keyword)
+        elif path[0] == "workExperience":
             work_experience_index = path[1]
             if 0 <= work_experience_index < len(TOC["workExperience"]):
                 TOC["workExperience"][work_experience_index]["tags"].append(keyword)
@@ -84,11 +92,14 @@ class backend:
     def query(self, doc_id, prompt):
         keyword = self.get_keyword(prompt)
         TOC = self.get_toc(doc_id)
-        TOC_with_tag_fields = self.add_tag_fields(TOC)
         citations = return_highlighted_pdf(doc_id, prompt)
         for citation in citations:
-            self.add_tags(TOC_with_tag_fields, citation, keyword)
-        return citations, TOC_with_tag_fields
+            self.add_tags(TOC, citation, keyword)
+        return citations, TOC 
+
+    def inject_query(self, prompt, highlighted_text):
+        return self.query_gpt4(f"You are a semantic parser. Rephrase the following query to incorporate the asker's intent given the text the asker has highlighted and refers to. The query is: {prompt}. The text to incorporate into the query is: {highlighted_text}.")
+
 
 
     schema = {

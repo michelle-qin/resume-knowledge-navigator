@@ -6,6 +6,7 @@ import shutil
 from sql_helpers import add_pdf_to_table
 from parse_text import pdf_to_text
 from document_highlight import return_highlighted_pdf
+from answer_search import multiple_document_table
 from flask_cors import CORS, cross_origin
 
 api = Flask(__name__)
@@ -84,14 +85,32 @@ def reset_db():
 
 @api.route("/query", methods=["POST"])
 def paper_search():
-    print(request.json)
     doc_id = request.json["doc_id"]
     query = request.json["query"]
-    citations = return_highlighted_pdf(doc_id, query)
-    response = jsonify({"message": "Query was successful", "citations": citations})
-    doc_id = request.json["doc_id"]
-    query = request.json["query"]
-    response = jsonify(return_highlighted_pdf(doc_id, query))
+    citations, TOC = client.query(doc_id, query)
+    response = jsonify({"message": "Query was successful", "citations": citations, "TOC": TOC})
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response, 200
+
+
+@api.route("/inject_highlighted", methods=["POST"])
+def get_injected_prompt():
+    og_query = request.json["og_query"]
+    highlighted_text = request.json["highlighted_text"]
+    injected_prompt = client.inject_query(og_query, highlighted_text)
+    response = jsonify({"message": "Query was successful", "injected_prompt": injected_prompt})
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response, 200
+
+@api.route("/query_multiple", methods=["POST"])
+def multiple_doc_search():
+    print("Here")
+    
+    doc_ids = request.json['doc_ids']
+    query = request.json['query']
+    print(doc_ids)
+    print(query)
+    response = jsonify(multiple_document_table(doc_ids, query))
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response, 200
 
@@ -103,14 +122,7 @@ def get_toc():
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
-@api.route("/full_query", methods=["GET"])
-def full_query():
-    doc_id = request.json["doc_id"]
-    query = request.json["query"]
-    citations, TOC = client.query(doc_id, query)
-    response = jsonify({"message": "Query was successful", "citations": citations, "TOC": TOC})
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    return response
+
 
 
 @api.before_request

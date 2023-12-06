@@ -130,38 +130,22 @@ def multiple_document_table(doc_ids, query):
 
     field = query_gpt4(field_prompt)
 
-    delete_query = f"DROP TABLE search_results"
-    evaluate_query(schema, delete_query)
+    res = {}
 
-    create_query = f"""
-        CREATE TABLE search_results (
-        doc_id INTEGER,
-        {field} TEXT,
-        {field}_citation TEXT
-    );
-    """
-    print(create_query)
-    evaluate_query(schema, create_query)
+    res["doc_id"] = []
+    res[field] = []
+    res[f"{field}_citation"] = []
+
 
     for doc_id in doc_ids:
-        print(f"Processing document {doc_id}")
-        # print(get_text_from_id(doc_id))
 
         response_dict = search_text(doc_id, query)
 
-        insert_query = f"""
-        INSERT INTO search_results (doc_id, {field}, {field}_citation)
-        VALUES (?, ?, ?);
-        """
+        res["doc_id"].append(doc_id)
+        res[field].append(response_dict["answer"])
+        res[f"{field}_citation"].append(response_dict["citation"])
 
-        data = (
-            doc_id,
-            response_dict["answer"],
-            response_dict["citation"]
-        )
-
-        print(insert_query)
-        evaluate_query_blind(schema, insert_query, data)
+    return res
             
 
 
