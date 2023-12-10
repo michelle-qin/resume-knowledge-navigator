@@ -439,11 +439,7 @@ export default function App() {
           <Text style={styles.columnTitle}>Contents</Text>
           <View style={styles.topBar}></View>
           {/* Content for the Contents Column */}
-          {tocLoading ? (<Text>Table of Contents Loading...</Text>) : (<ToC style={styles.toc} data={toc} doc_id={currentDocID} />)}
-        </View>
-        {/* View Column */}
-        <View style={[styles.column, styles.viewColumn]}>
-          <View style={styles.titleContainer}>
+          <View style={{ width: "100%", alignItems: "center" }}>
             <Picker
               style={styles.picker}
               selectedValue={currentDocName}
@@ -462,7 +458,31 @@ export default function App() {
                   <Picker.Item key={index} label={file.name} value={file.name} />
                 ))}
             </Picker>
-            <Text style={styles.columnTitle}>View</Text>
+          </View>
+
+          {tocLoading ? (<Text>Table of Contents Loading...</Text>) : (<ToC style={styles.toc} data={toc} doc_id={currentDocID} />)}
+        </View>
+        {/* View Column */}
+        <View style={[styles.column, styles.viewColumn]}>
+          <View style={styles.titleContainer}>
+            {/* <Picker
+              style={styles.picker}
+              selectedValue={currentDocName}
+              onValueChange={(itemValue, itemIndex) => {
+                const selectedFile = uploadedFiles.find((file) => file.name === itemValue);
+                setCurrentDocName(selectedFile.name)
+                setCurrentDocID(selectedFile.docId);
+                setResumeUri(selectedFile.pdfUri);
+              }}
+            >
+              {uploadedFiles
+                .filter((file) => {
+                  return docsToShow.includes(file.docId);
+                })
+                .map((file, index) => (
+                  <Picker.Item key={index} label={file.name} value={file.name} />
+                ))}
+            </Picker> */}
             <TouchableOpacity
               onPress={pickDocument}
               style={styles.importButton}
@@ -477,6 +497,9 @@ export default function App() {
               style={{ display: "none" }}
               onChange={handleMultipleFileSelect}
             />
+            <Text style={styles.columnTitle}>View</Text>
+            <View style={{ width: 200 }} />
+
           </View>
           <View style={styles.topBar}></View>
           {resumeUri ? (
@@ -678,8 +701,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: 120,
-    marginLeft: 80,
-    marginRight: 10,
+    marginLeft: 10,
+    marginRight: 80,
   },
   importButtonText: {
     color: "#ffffff",
@@ -696,8 +719,8 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   picker: {
-    width: 200,
-    marginLeft: 10,
+    width: "80%",
+    margin: 12,
   }
 });
 
