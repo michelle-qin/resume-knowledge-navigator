@@ -80,13 +80,16 @@ class backend:
         elif path[0] == "workExperience":
             work_experience_index = path[1]
             if 0 <= work_experience_index < len(TOC["workExperience"]):
-                TOC["workExperience"][work_experience_index]["tags"].append(keyword)
+                if keyword not in TOC["workExperience"][work_experience_index]["tags"]:
+                    TOC["workExperience"][work_experience_index]["tags"].append(keyword)
         elif path[0] == "education":
             education_index = path[1]
             if 0 <= education_index < len(TOC["education"]):
-                TOC["education"][education_index]["tags"].append(keyword)
+                if keyword not in TOC["education"][education_index]["tags"]:
+                    TOC["education"][education_index]["tags"].append(keyword)
         else:
-            TOC["tags"].append(keyword)
+            if keyword not in TOC["tags"]:
+                TOC["tags"].append(keyword)
 
 
     def query(self, doc_id, prompt):
