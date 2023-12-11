@@ -47,7 +47,7 @@ def add_doc():
                 os.remove(target_path)
             shutil.copy(file_path, target_path)
 
-            return jsonify({"message": "File successfully uploaded", "id": doc_id}), 200
+            return jsonify({"message": "File successfully uploaded", "id": doc_id, "filename": file.filename}), 200
         else:
             return jsonify({"message": "Invalid file format. Needs to be a pdf"}), 400
     except Exception as e:
@@ -92,6 +92,16 @@ def paper_search():
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response, 200
 
+
+@api.route("/inject_highlighted", methods=["POST"])
+def get_injected_prompt():
+    og_query = request.json["og_query"]
+    highlighted_text = request.json["highlighted_text"]
+    injected_prompt = client.inject_query(og_query, highlighted_text)
+    response = jsonify({"message": "Query was successful", "injected_prompt": injected_prompt})
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response, 200
+
 @api.route("/query_multiple", methods=["POST"])
 def multiple_doc_search():
     print("Here")
@@ -105,14 +115,12 @@ def multiple_doc_search():
     return response, 200
 
 
-@api.route("/get_toc", methods=["GET"])
+@api.route("/get_toc", methods=["GET", 'POST'])
 def get_toc():
     doc_id = request.json["doc_id"]
     response = jsonify(client.get_toc(doc_id))
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
-
-
 
 
 @api.before_request
@@ -131,6 +139,7 @@ def serve_pdf(filename):
     root_path = os.path.abspath("..")
     assets_path = os.path.join(root_path, "assets")
     return send_from_directory(assets_path, filename)
+
 
 
 if __name__ == "__main__":
