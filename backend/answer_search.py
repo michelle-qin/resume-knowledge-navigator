@@ -104,6 +104,7 @@ def query_gpt4(prompt):
             ])
     return response.choices[0].message.content
 
+
 def multiple_document_table(doc_ids, query):
 
     client = get_client()
@@ -148,4 +149,62 @@ def multiple_document_table(doc_ids, query):
     return res
             
 
+def multiple_document_table_to_sql(doc_ids, query):
 
+    client = get_client()
+    schema = "multiple_doc"
+    table_name = "table"
+
+    field_prompt = f"""
+    Given the query, give me the name of the column that would store the answer to it in a SQL table. Here are a few examples:
+
+    Query: Show me how this applicant has demostrates diversity.
+    Field name: diversity
+
+    Query: What foreign experience does this applicant have?
+    Field name: foreign_experience
+
+    Query: What college did they go to?
+    Field name: college
+
+    Remember only give me the field name after the "Field name:" This should be one word with no spaces. Use an underscore to separate words.
+
+    Query: {query}
+    Field name:
+    """
+
+    field = query_gpt4(field_prompt)
+
+    delete_query = f"DROP TABLE search_results"
+    evaluate_query(schema, delete_query)
+
+    create_query = f"""
+        CREATE TABLE search_results (
+        doc_id INTEGER,
+        {field} TEXT,
+        {field}_citation TEXT
+    );
+    """
+    print(create_query)
+    evaluate_query(schema, create_query)
+
+    for doc_id in doc_ids:
+        print(f"Processing document {doc_id}")
+        # print(get_text_from_id(doc_id))
+
+        response_dict = search_text(doc_id, query)
+
+        insert_query = f"""
+        INSERT INTO search_results (doc_id, {field}, {field}_citation)
+        VALUES (?, ?, ?);
+        """
+
+        data = (
+            doc_id,
+            response_dict["answer"],
+            response_dict["citation"]
+        )
+
+        print(insert_query)
+        evaluate_query_blind(schema, insert_query, data)
+            

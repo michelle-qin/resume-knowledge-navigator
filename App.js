@@ -16,8 +16,8 @@ import ToC from "./components/ToC.js";
 import { ModalityProvider } from "reactgenie-lib";
 import { reactGenieStore } from "./store.js";
 
-import ENV from "./config.js";
-import { StoreExamples } from "./genie/store.ts";
+// import ENV from "./config.js";
+// import { StoreExamples } from "./genie/store.ts";
 import SvgComponent from "./svg.js";
 
 export default function App() {
